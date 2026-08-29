@@ -14,15 +14,18 @@ import {
   type ReaderInfo,
 } from "@/lib/api";
 
-const PdfReader = dynamic(() => import("@/components/readers/PdfReader").then((m) => m.PdfReader), {
-  ssr: false,
-});
-const EpubReader = dynamic(() => import("@/components/readers/EpubReader").then((m) => m.EpubReader), {
-  ssr: false,
-});
-const TextReader = dynamic(() => import("@/components/readers/TextReader").then((m) => m.TextReader), {
-  ssr: false,
-});
+const PdfReader = dynamic(
+  () => import("@/components/readers/PdfReader").then((m) => m.PdfReader),
+  { ssr: false }
+);
+const EpubReader = dynamic(
+  () => import("@/components/readers/EpubReader").then((m) => m.EpubReader),
+  { ssr: false }
+);
+const TextReader = dynamic(
+  () => import("@/components/readers/TextReader").then((m) => m.TextReader),
+  { ssr: false }
+);
 
 export default function ReadPage() {
   const params = useParams<{ id: string }>();
@@ -71,8 +74,11 @@ export default function ReadPage() {
   if (notFound) {
     return (
       <div className="max-w-lg mx-auto px-4 py-24 text-center">
-        <p className="text-slate-400">Couldn&apos;t find that book.</p>
-        <Link href="/" className="inline-flex items-center gap-2 mt-4 text-brand-400 hover:text-brand-300">
+        <p className="text-slate-500">Couldn&apos;t find that book.</p>
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 mt-4 text-brand-600 hover:text-brand-500"
+        >
           <ArrowLeft className="w-4 h-4" /> Back to library
         </Link>
       </div>
@@ -80,21 +86,22 @@ export default function ReadPage() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)]">
-      {/* Header bar */}
-      <div className="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-slate-800 bg-[#0a0e17]">
+    <div className="flex flex-col h-screen bg-stone-100">
+      <div className="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-stone-200 bg-white/95 backdrop-blur shadow-sm shrink-0 z-40">
         <Link
           href={book ? `/book/${book.id}` : "/"}
-          className="flex items-center gap-2 text-sm text-slate-400 hover:text-brand-400 transition-colors min-w-0"
+          className="flex items-center gap-2 text-sm text-slate-500 hover:text-brand-600 transition-colors min-w-0"
         >
           <ArrowLeft className="w-4 h-4 shrink-0" />
-          <span className="truncate max-w-[40vw]">{book?.title || "Loading…"}</span>
+          <span className="truncate max-w-[50vw] font-medium text-slate-700">
+            {book?.title || "Loading…"}
+          </span>
         </Link>
         {book && (
           <a
             href={getDownloadUrl(book.id)}
             download
-            className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-brand-400 transition-colors"
+            className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-brand-600 transition-colors"
           >
             <Download className="w-4 h-4" />
             <span className="hidden sm:inline">Download</span>
@@ -102,26 +109,31 @@ export default function ReadPage() {
         )}
       </div>
 
-      {/* Body */}
       <div className="flex-1 min-h-0">
         {!readerInfo && (
           <div className="h-full flex items-center justify-center gap-2 text-slate-500">
-            <Loader2 className="w-5 h-5 animate-spin" /> Loading…
+            <Loader2 className="w-5 h-5 animate-spin text-brand-500" /> Loading…
           </div>
         )}
 
         {readerInfo?.reader_status === "converting" && (
-          <div className="h-full flex flex-col items-center justify-center gap-3 text-slate-400 px-6 text-center">
-            <Loader2 className="w-6 h-6 animate-spin text-brand-400" />
-            <p>Converting this book for the reader — usually takes under a minute.</p>
-            <p className="text-sm text-slate-500">You can leave this open, it&apos;ll switch over automatically.</p>
+          <div className="h-full flex flex-col items-center justify-center gap-3 text-slate-500 px-6 text-center">
+            <Loader2 className="w-6 h-6 animate-spin text-brand-500" />
+            <p className="text-slate-700">
+              Converting this book for the reader — usually takes under a minute.
+            </p>
+            <p className="text-sm text-slate-400">
+              You can leave this open; it&apos;ll switch over automatically.
+            </p>
           </div>
         )}
 
         {readerInfo?.reader_status === "failed" && book && (
-          <div className="h-full flex flex-col items-center justify-center gap-3 text-slate-400 px-6 text-center">
-            <AlertTriangle className="w-6 h-6 text-amber-400" />
-            <p>Couldn&apos;t prepare this book for the in-browser reader.</p>
+          <div className="h-full flex flex-col items-center justify-center gap-3 text-slate-500 px-6 text-center">
+            <AlertTriangle className="w-6 h-6 text-amber-500" />
+            <p className="text-slate-700">
+              Couldn&apos;t prepare this book for the in-browser reader.
+            </p>
             <a
               href={getDownloadUrl(book.id)}
               download
@@ -133,8 +145,10 @@ export default function ReadPage() {
         )}
 
         {readerInfo?.reader_status === "unsupported" && book && (
-          <div className="h-full flex flex-col items-center justify-center gap-3 text-slate-400 px-6 text-center">
-            <p>This file type doesn&apos;t support in-browser reading yet.</p>
+          <div className="h-full flex flex-col items-center justify-center gap-3 text-slate-500 px-6 text-center">
+            <p className="text-slate-700">
+              This file type doesn&apos;t support in-browser reading yet.
+            </p>
             <a
               href={getDownloadUrl(book.id)}
               download
