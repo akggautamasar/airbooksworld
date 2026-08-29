@@ -38,12 +38,12 @@ export default async function HomePage({ searchParams }: Props) {
         <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
           Your free ebook library
         </h1>
-        <p className="text-slate-400 max-w-lg mx-auto">
+        <p className="text-slate-500 max-w-lg mx-auto">
           Browse, read and download PDFs &amp; EPUBs. All files stored securely
           on Telegram.
         </p>
         <div className="flex justify-center pt-2">
-          <Suspense fallback={<div className="h-11 w-full max-w-xl rounded-xl bg-slate-800 animate-pulse" />}>
+          <Suspense fallback={<div className="h-11 w-full max-w-xl rounded-xl bg-slate-200 animate-pulse" />}>
             <SearchBar />
           </Suspense>
         </div>
@@ -57,8 +57,8 @@ export default async function HomePage({ searchParams }: Props) {
             href="/"
             className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
               !tag
-                ? "border-brand-500/50 bg-brand-500/15 text-brand-300"
-                : "border-slate-700 text-slate-400 hover:border-slate-600"
+                ? "border-brand-300 bg-brand-50 text-brand-700"
+                : "border-slate-200 text-slate-500 hover:border-slate-600"
             }`}
           >
             All
@@ -69,8 +69,8 @@ export default async function HomePage({ searchParams }: Props) {
               href={`/?tag=${encodeURIComponent(t)}`}
               className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
                 tag === t
-                  ? "border-brand-500/50 bg-brand-500/15 text-brand-300"
-                  : "border-slate-700 text-slate-400 hover:border-slate-600"
+                  ? "border-brand-300 bg-brand-50 text-brand-700"
+                  : "border-slate-200 text-slate-500 hover:border-slate-600"
               }`}
             >
               {t}
@@ -97,21 +97,21 @@ export default async function HomePage({ searchParams }: Props) {
 
       {/* Error */}
       {error && (
-        <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-6 text-center space-y-2">
-          <p className="text-amber-200 font-medium">Could not load library</p>
-          <p className="text-sm text-amber-200/70">{error}</p>
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center space-y-2">
+          <p className="text-amber-800 font-medium">Could not load library</p>
+          <p className="text-sm text-amber-700/80">{error}</p>
           <p className="text-xs text-slate-500 pt-2">
-            Make sure <code className="text-slate-400">NEXT_PUBLIC_API_URL</code>{" "}
-            points to your backend and <code className="text-slate-400">BOOKS_CHANNEL</code> is set.
+            Make sure <code className="text-slate-500">NEXT_PUBLIC_API_URL</code>{" "}
+            points to your backend and <code className="text-slate-500">BOOKS_CHANNEL</code> is set.
           </p>
         </div>
       )}
 
       {/* Empty */}
       {!error && books.length === 0 && (
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-12 text-center space-y-3">
-          <BookOpen className="w-12 h-12 text-slate-600 mx-auto" />
-          <p className="text-slate-300 font-medium">No books yet</p>
+        <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center space-y-3">
+          <BookOpen className="w-12 h-12 text-slate-400 mx-auto" />
+          <p className="text-slate-700 font-medium">No books yet</p>
           <p className="text-sm text-slate-500">
             {q || tag
               ? "Try a different search."
