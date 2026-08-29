@@ -33,9 +33,9 @@ export function BookCard({ book }: { book: Book }) {
           <span className="text-xs text-slate-500">{formatSize(book.size)}</span>
           <div className="flex items-center gap-1.5">
             <Link
-              href={`/book/${book.id}`}
+              href={`/book/${book.id}/read`}
               className="p-1.5 rounded-lg text-slate-400 hover:text-brand-400 hover:bg-brand-500/10 transition-colors"
-              title="Read / Details"
+              title="Read in browser"
             >
               <BookOpen className="w-4 h-4" />
             </Link>

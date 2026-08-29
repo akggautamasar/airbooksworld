@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen, Search, Upload } from "lucide-react";
+import { BookOpen, Search, Upload, ShieldCheck } from "lucide-react";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
 
@@ -11,6 +11,7 @@ export function Header() {
   const nav = [
     { href: "/", label: "Library", icon: BookOpen },
     { href: "/upload", label: "Upload", icon: Upload },
+    { href: "/admin", label: "Admin", icon: ShieldCheck },
   ];
 
   return (
