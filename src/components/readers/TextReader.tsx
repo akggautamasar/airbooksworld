@@ -31,34 +31,36 @@ export function TextReader({ fileUrl }: { fileUrl: string }) {
   }
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center justify-end gap-1 px-4 py-2.5 border-b border-slate-800 bg-slate-900/70 backdrop-blur">
+    <div className="flex flex-col h-full min-h-0 bg-stone-100">
+      <div className="flex items-center justify-end gap-1 px-4 py-2.5 border-b border-stone-200 bg-white/90 backdrop-blur shrink-0 shadow-sm">
         <button
+          type="button"
           onClick={() => setFontSize((s) => Math.max(12, s - 2))}
-          className="p-1.5 rounded-lg text-slate-400 hover:text-brand-400 hover:bg-slate-800 transition-colors"
+          className="p-1.5 rounded-lg text-slate-500 hover:text-brand-600 hover:bg-brand-50 transition-colors"
           aria-label="Decrease font size"
         >
           <Minus className="w-4 h-4" />
         </button>
-        <span className="text-xs text-slate-500 w-8 text-center">{fontSize}px</span>
+        <span className="text-xs text-slate-500 w-8 text-center tabular-nums">{fontSize}px</span>
         <button
+          type="button"
           onClick={() => setFontSize((s) => Math.min(28, s + 2))}
-          className="p-1.5 rounded-lg text-slate-400 hover:text-brand-400 hover:bg-slate-800 transition-colors"
+          className="p-1.5 rounded-lg text-slate-500 hover:text-brand-600 hover:bg-brand-50 transition-colors"
           aria-label="Increase font size"
         >
           <Plus className="w-4 h-4" />
         </button>
       </div>
 
-      <div className="flex-1 overflow-auto bg-slate-950/60">
+      <div className="flex-1 overflow-auto">
         {text === null ? (
           <div className="flex items-center gap-2 text-slate-500 justify-center py-20">
-            <Loader2 className="w-5 h-5 animate-spin" /> Loading text…
+            <Loader2 className="w-5 h-5 animate-spin text-brand-500" /> Loading text…
           </div>
         ) : (
           <pre
             style={{ fontSize: `${fontSize}px` }}
-            className="max-w-3xl mx-auto px-6 py-10 whitespace-pre-wrap break-words font-sans text-slate-200 leading-relaxed"
+            className="max-w-3xl mx-auto px-6 py-10 whitespace-pre-wrap break-words font-sans text-slate-700 leading-relaxed bg-white my-6 rounded-xl shadow-sm border border-stone-200"
           >
             {text}
           </pre>
