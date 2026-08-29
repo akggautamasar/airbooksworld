@@ -5,15 +5,15 @@ import { formatSize, getFileExt, getDownloadUrl } from "@/lib/api";
 
 export function BookCard({ book }: { book: Book }) {
   const ext = getFileExt(book.filename);
+  const canRead = ["PDF", "EPUB", "TXT", "MOBI", "AZW3"].includes(ext);
 
   return (
-    <article className="book-card group relative rounded-2xl border border-slate-800 bg-slate-900/50 overflow-hidden">
-      {/* Cover placeholder */}
+    <article className="book-card group relative rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
       <Link href={`/book/${book.id}`} className="block">
-        <div className="aspect-[3/4] bg-gradient-to-br from-slate-800 to-slate-900 flex flex-col items-center justify-center relative overflow-hidden">
+        <div className="aspect-[3/4] bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col items-center justify-center relative overflow-hidden">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-brand-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <FileText className="w-14 h-14 text-slate-600 group-hover:text-brand-400/70 transition-colors mb-2" />
-          <span className="text-[10px] font-bold tracking-widest text-slate-500 uppercase bg-slate-800/80 px-2 py-0.5 rounded">
+          <FileText className="w-14 h-14 text-slate-300 group-hover:text-brand-400 transition-colors mb-2" />
+          <span className="text-[10px] font-bold tracking-widest text-slate-500 uppercase bg-white/90 border border-slate-200 px-2 py-0.5 rounded shadow-sm">
             {ext}
           </span>
         </div>
@@ -21,27 +21,29 @@ export function BookCard({ book }: { book: Book }) {
 
       <div className="p-4 space-y-2">
         <Link href={`/book/${book.id}`}>
-          <h3 className="font-semibold text-slate-100 line-clamp-2 leading-snug group-hover:text-brand-300 transition-colors">
+          <h3 className="font-semibold text-slate-800 line-clamp-2 leading-snug group-hover:text-brand-600 transition-colors">
             {book.title}
           </h3>
         </Link>
         {book.author && (
-          <p className="text-sm text-slate-400 truncate">{book.author}</p>
+          <p className="text-sm text-slate-500 truncate">{book.author}</p>
         )}
 
         <div className="flex items-center justify-between pt-1">
-          <span className="text-xs text-slate-500">{formatSize(book.size)}</span>
+          <span className="text-xs text-slate-400">{formatSize(book.size)}</span>
           <div className="flex items-center gap-1.5">
-            <Link
-              href={`/book/${book.id}/read`}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-brand-400 hover:bg-brand-500/10 transition-colors"
-              title="Read in browser"
-            >
-              <BookOpen className="w-4 h-4" />
-            </Link>
+            {canRead && (
+              <Link
+                href={`/book/${book.id}/read`}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors"
+                title="Read in browser"
+              >
+                <BookOpen className="w-4 h-4" />
+              </Link>
+            )}
             <a
               href={getDownloadUrl(book.id)}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
               title="Download"
               download
             >
@@ -55,7 +57,7 @@ export function BookCard({ book }: { book: Book }) {
             {book.tags.slice(0, 3).map((tag) => (
               <span
                 key={tag}
-                className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400"
+                className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500"
               >
                 {tag}
               </span>
