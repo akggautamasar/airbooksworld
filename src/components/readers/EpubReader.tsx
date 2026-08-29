@@ -13,9 +13,21 @@ import {
 
 type NavItem = { label: string; href: string; index: number };
 
+function matchAll(str: string, re: RegExp): RegExpExecArray[] {
+  const out: RegExpExecArray[] = [];
+  const flags = re.flags.includes("g") ? re.flags : re.flags + "g";
+  const r = new RegExp(re.source, flags);
+  let m: RegExpExecArray | null;
+  while ((m = r.exec(str)) !== null) {
+    out.push(m);
+    if (m[0].length === 0) r.lastIndex++;
+  }
+  return out;
+}
+
 /**
  * Reliable EPUB reader inspired by the working BeyondDrive PDFViewer.html.
- * Uses JSZip + chapter extraction instead of epubjs iframe (avoids height/CORS/theme issues).
+ * Uses JSZip + chapter extraction instead of epubjs iframe.
  */
 export function EpubReader({ fileUrl }: { fileUrl: string }) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -67,10 +79,15 @@ export function EpubReader({ fileUrl }: { fileUrl: string }) {
           ? path.slice(0, path.lastIndexOf("/") + 1)
           : "";
 
-        const imgMatches = [...chapterHtml.matchAll(/src=["']([^"'#?]+)["']/g)];
+        const imgMatches = matchAll(
+          chapterHtml,
+          /src=["']([^"'#?]+)["']/g
+        );
         await Promise.all(
           imgMatches
-            .filter((m) => !m[1].startsWith("data:") && !m[1].startsWith("http"))
+            .filter(
+              (m) => !m[1].startsWith("data:") && !m[1].startsWith("http")
+            )
             .map(async (m) => {
               const ip = chapterDir + m[1];
               const img = zip.file(ip) || zip.file(decodeURIComponent(ip));
@@ -85,11 +102,17 @@ export function EpubReader({ fileUrl }: { fileUrl: string }) {
                 : /\.webp$/i.test(ip)
                 ? "image/webp"
                 : "image/jpeg";
-              chapterHtml = chapterHtml.replace(m[0], `src="data:${mt};base64,${b64}"`);
+              chapterHtml = chapterHtml.replace(
+                m[0],
+                `src="data:${mt};base64,${b64}"`
+              );
             })
         );
 
-        const cssMatches = [...chapterHtml.matchAll(/href=["']([^"']+\.css[^"']*)["']/g)];
+        const cssMatches = matchAll(
+          chapterHtml,
+          /href=["']([^"']+\.css[^"']*)["']/g
+        );
         const cssParts = await Promise.all(
           cssMatches.map(async (m) => {
             const cp = chapterDir + m[1].split("?")[0];
@@ -108,7 +131,9 @@ export function EpubReader({ fileUrl }: { fileUrl: string }) {
         }
 
         const parsed = parser.parseFromString(chapterHtml, "text/html");
-        parsed.querySelectorAll('link[rel="stylesheet"]').forEach((el) => el.remove());
+        parsed
+          .querySelectorAll('link[rel="stylesheet"]')
+          .forEach((el) => el.remove());
         parsed.querySelectorAll("style").forEach((el) => {
           el.textContent = sanitizeCSS(el.textContent || "");
         });
@@ -156,7 +181,9 @@ export function EpubReader({ fileUrl }: { fileUrl: string }) {
         if (cancelled || gen !== generationRef.current) return;
 
         const containerFile = zip.file("META-INF/container.xml");
-        if (!containerFile) throw new Error("Invalid EPUB: missing container.xml");
+        if (!containerFile) {
+          throw new Error("Invalid EPUB: missing container.xml");
+        }
 
         const cont = await containerFile.async("string");
         const parser = parserRef.current!;
@@ -201,15 +228,21 @@ export function EpubReader({ fileUrl }: { fileUrl: string }) {
               const ncxDoc = parser.parseFromString(ncxXml, "text/xml");
               ncxDoc.querySelectorAll("navPoint").forEach((np) => {
                 const label =
-                  np.querySelector("navLabel text")?.textContent?.trim() || "Untitled";
+                  np.querySelector("navLabel text")?.textContent?.trim() ||
+                  "Untitled";
                 const src = np.querySelector("content")?.getAttribute("src");
                 if (!src) return;
                 const hrefOnly = src.split("#")[0];
                 const full = dir + hrefOnly;
                 const idx = spinePaths.findIndex(
-                  (p) => p === full || p.endsWith(hrefOnly) || decodeURIComponent(p) === full
+                  (p) =>
+                    p === full ||
+                    p.endsWith(hrefOnly) ||
+                    decodeURIComponent(p) === full
                 );
-                if (idx >= 0) tocItems.push({ label, href: full, index: idx });
+                if (idx >= 0) {
+                  tocItems.push({ label, href: full, index: idx });
+                }
               });
             }
           } catch {
@@ -220,7 +253,8 @@ export function EpubReader({ fileUrl }: { fileUrl: string }) {
         if (tocItems.length === 0) {
           spinePaths.forEach((p, i) => {
             const name =
-              p.split("/").pop()?.replace(/\.(x?html?)$/i, "") || `Chapter ${i + 1}`;
+              p.split("/").pop()?.replace(/\.(x?html?)$/i, "") ||
+              `Chapter ${i + 1}`;
             tocItems.push({
               label: name.replace(/[-_]/g, " "),
               href: p,
@@ -238,7 +272,10 @@ export function EpubReader({ fileUrl }: { fileUrl: string }) {
       } catch (e: any) {
         console.error("[EpubReader]", e);
         if (!cancelled && gen === generationRef.current) {
-          setError(e?.message || "Couldn't render this EPUB. Try downloading it instead.");
+          setError(
+            e?.message ||
+              "Couldn't render this EPUB. Try downloading it instead."
+          );
           setLoading(false);
         }
       }
@@ -274,13 +311,19 @@ export function EpubReader({ fileUrl }: { fileUrl: string }) {
   }, [chapterIndex, spine, zipRef, tocOpen]);
 
   const progress =
-    spine.length > 0 ? Math.round(((chapterIndex + 1) / spine.length) * 100) : 0;
+    spine.length > 0
+      ? Math.round(((chapterIndex + 1) / spine.length) * 100)
+      : 0;
 
   if (error) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-3 text-slate-500 py-20 text-center px-6">
         <p className="text-slate-600">{error}</p>
-        <a href={fileUrl} download className="text-sm text-brand-600 hover:underline font-medium">
+        <a
+          href={fileUrl}
+          download
+          className="text-sm text-brand-600 hover:underline font-medium"
+        >
           Download file instead
         </a>
       </div>
@@ -337,7 +380,10 @@ export function EpubReader({ fileUrl }: { fileUrl: string }) {
           </div>
         )}
 
-        <div ref={scrollRef} className="h-full overflow-y-auto overflow-x-hidden">
+        <div
+          ref={scrollRef}
+          className="h-full overflow-y-auto overflow-x-hidden"
+        >
           <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 pb-24">
             <article
               className="epub-page bg-white rounded-xl shadow-lg shadow-stone-300/40 border border-stone-200/80 px-6 sm:px-12 py-10 sm:py-14"
@@ -382,7 +428,9 @@ export function EpubReader({ fileUrl }: { fileUrl: string }) {
             />
             <div className="absolute inset-y-0 left-0 w-72 max-w-[85%] bg-white border-r border-stone-200 shadow-2xl flex flex-col z-30">
               <div className="flex items-center justify-between px-4 py-3 border-b border-stone-200 shrink-0">
-                <span className="text-sm font-semibold text-slate-800">Contents</span>
+                <span className="text-sm font-semibold text-slate-800">
+                  Contents
+                </span>
                 <button
                   type="button"
                   onClick={() => setTocOpen(false)}
@@ -403,7 +451,9 @@ export function EpubReader({ fileUrl }: { fileUrl: string }) {
                       key={`${item.href}-${i}`}
                       type="button"
                       onClick={() => {
-                        if (zipRef) loadChapter(zipRef, spine, opfDir, item.index);
+                        if (zipRef) {
+                          loadChapter(zipRef, spine, opfDir, item.index);
+                        }
                         setTocOpen(false);
                       }}
                       className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
