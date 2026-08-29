@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #0a0e17;
+  --surface: #111827;
+  --surface-2: #1a2332;
+  --border: #1e293b;
+  --text: #f1f5f9;
+  --muted: #94a3b8;
+  --brand: #0c8ce9;
+  --brand-soft: rgba(12, 140, 233, 0.15);
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* Subtle grid background */
+.bg-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Book card hover lift */
+.book-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.book-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px -12px rgba(12, 140, 233, 0.25);
+  border-color: rgba(12, 140, 233, 0.4);
+}
