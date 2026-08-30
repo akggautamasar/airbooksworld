@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import {
   Lock,
@@ -11,18 +11,128 @@ import {
   Loader2,
   ShieldAlert,
   LogOut,
+  ImagePlus,
+  Sparkles,
+  Wand2,
+  FileText,
 } from "lucide-react";
 import {
   fetchBooks,
   verifyAdminPassword,
   adminUpdateBook,
   adminDeleteBook,
+  adminUploadCover,
+  adminGenerateCover,
+  adminGenerateAllCovers,
   getStoredAdminPassword,
   storeAdminPassword,
   clearAdminPassword,
   formatSize,
+  getCoverUrl,
   type Book,
+  type GenerateAllCoversResult,
 } from "@/lib/api";
+
+function CoverThumb({
+  book,
+  password,
+  onUpdated,
+}: {
+  book: Book;
+  password: string;
+  onUpdated: (b: Book) => void;
+}) {
+  const [failed, setFailed] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const hasCover = !!book.cover_message_id && !failed;
+  const busy = uploading || generating;
+
+  async function handleFilePicked(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow picking the same file again later
+    if (!file) return;
+    setUploading(true);
+    setError("");
+    try {
+      const updated = await adminUploadCover(book.id, password, file);
+      setFailed(false);
+      onUpdated(updated);
+    } catch {
+      setError("Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function handleGenerate() {
+    setGenerating(true);
+    setError("");
+    try {
+      const updated = await adminGenerateCover(book.id, password, true);
+      setFailed(false);
+      onUpdated(updated);
+    } catch {
+      setError("Generate failed");
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  return (
+    <div className="shrink-0 flex flex-col items-center gap-1.5">
+      <div className="relative w-14 h-[74px] rounded-lg overflow-hidden border border-slate-700 bg-slate-800 flex items-center justify-center">
+        {hasCover ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={getCoverUrl(book.id, book.updated_at)}
+            alt=""
+            className="w-full h-full object-cover"
+            onError={() => setFailed(true)}
+          />
+        ) : (
+          <FileText className="w-5 h-5 text-slate-600" />
+        )}
+        {busy && (
+          <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+            <Loader2 className="w-4 h-4 animate-spin text-white" />
+          </div>
+        )}
+      </div>
+      <div className="flex items-center gap-1">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="hidden"
+          onChange={handleFilePicked}
+        />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={busy}
+          title="Upload cover"
+          className="p-1 rounded text-slate-400 hover:text-brand-400 hover:bg-slate-800 transition-colors disabled:opacity-50"
+        >
+          <ImagePlus className="w-3.5 h-3.5" />
+        </button>
+        <button
+          type="button"
+          onClick={handleGenerate}
+          disabled={busy}
+          title={hasCover ? "Regenerate from first page" : "Generate from first page"}
+          className="p-1 rounded text-slate-400 hover:text-brand-400 hover:bg-slate-800 transition-colors disabled:opacity-50"
+        >
+          <Wand2 className="w-3.5 h-3.5" />
+        </button>
+      </div>
+      {error && <p className="text-[10px] text-rose-400 text-center leading-tight">{error}</p>}
+    </div>
+  );
+}
 
 export default function AdminPage() {
   const [password, setPassword] = useState<string | null>(null);
@@ -36,6 +146,9 @@ export default function AdminPage() {
   const [editForm, setEditForm] = useState<Partial<Book>>({});
   const [actionError, setActionError] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const [generatingAll, setGeneratingAll] = useState(false);
+  const [generateAllResult, setGenerateAllResult] = useState<GenerateAllCoversResult | null>(null);
 
   useEffect(() => {
     const stored = getStoredAdminPassword();
@@ -55,6 +168,31 @@ export default function AdminPage() {
   useEffect(() => {
     if (password) loadBooks();
   }, [password, loadBooks]);
+
+  function handleCoverUpdated(updated: Book) {
+    setBooks((prev) => prev.map((b) => (b.id === updated.id ? updated : b)));
+  }
+
+  async function handleGenerateAll() {
+    if (!password) return;
+    setGeneratingAll(true);
+    setGenerateAllResult(null);
+    setActionError("");
+    try {
+      const result = await adminGenerateAllCovers(password);
+      setGenerateAllResult(result);
+      await loadBooks();
+    } catch (err) {
+      if (err instanceof Error && err.message.includes("Invalid admin password")) {
+        setActionError("Your session expired — log in again.");
+        logout();
+      } else {
+        setActionError("Couldn't generate covers. Try again.");
+      }
+    } finally {
+      setGeneratingAll(false);
+    }
+  }
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -169,18 +307,45 @@ export default function AdminPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 gap-4">
         <div>
           <h1 className="text-xl font-bold text-slate-100">Manage books</h1>
           <p className="text-sm text-slate-500">{books.length} book{books.length === 1 ? "" : "s"}</p>
         </div>
-        <button
-          onClick={logout}
-          className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-rose-400 transition-colors"
-        >
-          <LogOut className="w-4 h-4" /> Sign out
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleGenerateAll}
+            disabled={generatingAll}
+            title="Generate covers for every book that doesn't have one yet — existing covers are left untouched"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700 hover:border-brand-500 hover:text-brand-300 text-slate-300 text-sm transition-colors disabled:opacity-50"
+          >
+            {generatingAll ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="w-3.5 h-3.5" />
+            )}
+            Generate all covers
+          </button>
+          <button
+            onClick={logout}
+            className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-rose-400 transition-colors"
+          >
+            <LogOut className="w-4 h-4" /> Sign out
+          </button>
+        </div>
       </div>
+
+      {generateAllResult && (
+        <div className="mb-4 text-sm text-slate-300 bg-slate-900/60 border border-slate-800 rounded-xl px-4 py-2.5">
+          Generated {generateAllResult.generated} cover
+          {generateAllResult.generated === 1 ? "" : "s"}
+          {generateAllResult.skipped > 0 &&
+            ` · skipped ${generateAllResult.skipped} that already had one`}
+          {generateAllResult.failed.length > 0 &&
+            ` · ${generateAllResult.failed.length} failed`}
+          .
+        </div>
+      )}
 
       {actionError && (
         <div className="mb-4 text-sm text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-2.5 flex items-center gap-1.5">
@@ -257,6 +422,7 @@ export default function AdminPage() {
                 </div>
               ) : (
                 <div className="p-4 flex items-center gap-4">
+                  <CoverThumb book={book} password={password} onUpdated={handleCoverUpdated} />
                   <div className="min-w-0 flex-1">
                     <Link
                       href={`/book/${book.id}`}
