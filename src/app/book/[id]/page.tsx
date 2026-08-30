@@ -12,6 +12,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { fetchBook, formatSize, getDownloadUrl, getFileExt } from "@/lib/api";
+import { BookCoverImage } from "@/components/BookCoverImage";
 
 type Props = { params: { id: string } };
 
@@ -55,12 +56,13 @@ export default async function BookPage({ params }: Props) {
       </Link>
 
       <div className="grid md:grid-cols-[240px_1fr] gap-8">
-        <div className="aspect-[3/4] rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 flex flex-col items-center justify-center shadow-lg shadow-slate-200/60">
-          <FileText className="w-20 h-20 text-slate-300 mb-3" />
-          <span className="text-xs font-bold tracking-widest text-slate-500 uppercase bg-white border border-slate-200 px-3 py-1 rounded-lg shadow-sm">
-            {ext}
-          </span>
-        </div>
+        <BookCoverImage
+          bookId={book.id}
+          title={book.title}
+          ext={ext}
+          updatedAt={book.updated_at}
+          hasCover={!!book.cover_message_id}
+        />
 
         <div className="space-y-6">
           <div>
