@@ -102,6 +102,13 @@ export function getDownloadUrl(bookId: string) {
   return `${getBase()}/api/books/${bookId}/download`;
 }
 
+export function getCoverUrl(bookId: string, version?: string | number) {
+  const base = `${getBase()}/api/books/${bookId}/cover`;
+  // Cache-bust with the book's updated_at so a freshly uploaded/generated
+  // cover shows up immediately instead of an old cached image.
+  return version ? `${base}?v=${encodeURIComponent(version)}` : base;
+}
+
 export async function fetchReaderInfo(bookId: string): Promise<ReaderInfo> {
   const res = await fetch(`${getBase()}/api/books/${bookId}/reader-info`, {
     cache: "no-store",
@@ -153,6 +160,67 @@ export async function adminDeleteBook(bookId: string, password: string): Promise
     if (res.status === 401) throw new Error("Invalid admin password");
     throw new Error(`Failed to delete book: ${res.status}`);
   }
+}
+
+export async function adminUploadCover(
+  bookId: string,
+  password: string,
+  file: File
+): Promise<Book> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch(`${getBase()}/api/books/${bookId}/cover`, {
+    method: "POST",
+    headers: { "X-Admin-Password": password },
+    body: form,
+  });
+  if (!res.ok) {
+    if (res.status === 401) throw new Error("Invalid admin password");
+    throw new Error(`Failed to upload cover: ${res.status}`);
+  }
+  const data = await res.json();
+  return data.book;
+}
+
+export async function adminGenerateCover(
+  bookId: string,
+  password: string,
+  force: boolean = true
+): Promise<Book> {
+  const res = await fetch(
+    `${getBase()}/api/books/${bookId}/cover/generate?force=${force}`,
+    {
+      method: "POST",
+      headers: { "X-Admin-Password": password },
+    }
+  );
+  if (!res.ok) {
+    if (res.status === 401) throw new Error("Invalid admin password");
+    throw new Error(`Failed to generate cover: ${res.status}`);
+  }
+  const data = await res.json();
+  return data.book;
+}
+
+export type GenerateAllCoversResult = {
+  total_missing: number;
+  generated: number;
+  skipped: number;
+  failed: string[];
+};
+
+export async function adminGenerateAllCovers(
+  password: string
+): Promise<GenerateAllCoversResult> {
+  const res = await fetch(`${getBase()}/api/books/covers/generate-all`, {
+    method: "POST",
+    headers: { "X-Admin-Password": password },
+  });
+  if (!res.ok) {
+    if (res.status === 401) throw new Error("Invalid admin password");
+    throw new Error(`Failed to generate covers: ${res.status}`);
+  }
+  return res.json();
 }
 
 export function formatSize(bytes: number): string {
