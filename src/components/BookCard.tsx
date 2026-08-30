@@ -1,21 +1,38 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import { BookOpen, Download, FileText } from "lucide-react";
 import type { Book } from "@/lib/api";
-import { formatSize, getFileExt, getDownloadUrl } from "@/lib/api";
+import { formatSize, getFileExt, getDownloadUrl, getCoverUrl } from "@/lib/api";
 
 export function BookCard({ book }: { book: Book }) {
   const ext = getFileExt(book.filename);
   const canRead = ["PDF", "EPUB", "TXT", "MOBI", "AZW3"].includes(ext);
+  const [coverFailed, setCoverFailed] = useState(false);
+  const hasCover = !!book.cover_message_id && !coverFailed;
 
   return (
     <article className="book-card group relative rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
       <Link href={`/book/${book.id}`} className="block">
         <div className="aspect-[3/4] bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col items-center justify-center relative overflow-hidden">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-brand-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <FileText className="w-14 h-14 text-slate-300 group-hover:text-brand-400 transition-colors mb-2" />
-          <span className="text-[10px] font-bold tracking-widest text-slate-500 uppercase bg-white/90 border border-slate-200 px-2 py-0.5 rounded shadow-sm">
-            {ext}
-          </span>
+          {hasCover ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={getCoverUrl(book.id, book.updated_at)}
+              alt={`Cover of ${book.title}`}
+              className="absolute inset-0 w-full h-full object-cover"
+              onError={() => setCoverFailed(true)}
+            />
+          ) : (
+            <>
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-brand-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <FileText className="w-14 h-14 text-slate-300 group-hover:text-brand-400 transition-colors mb-2" />
+              <span className="text-[10px] font-bold tracking-widest text-slate-500 uppercase bg-white/90 border border-slate-200 px-2 py-0.5 rounded shadow-sm">
+                {ext}
+              </span>
+            </>
+          )}
         </div>
       </Link>
 
