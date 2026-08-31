@@ -255,6 +255,134 @@ export async function fetchDuplicateGroups(
   return res.json();
 }
 
+// ---------------------------------------------------------------------------
+// Bulk import from a Telegram channel
+// ---------------------------------------------------------------------------
+
+export type ImportStatus =
+  | "validating"
+  | "scanning"
+  | "fetching"
+  | "deduplicating"
+  | "importing"
+  | "enriching"
+  | "done"
+  | "cancelled"
+  | "error";
+
+export type ImportProgress = {
+  import_id: string;
+  status: ImportStatus;
+  channel?: string;
+  channel_name?: string;
+  imported: number;
+  skipped: number;
+  skipped_duplicate: number;
+  skipped_not_book: number;
+  errors: number;
+  fetched: number;
+  total_scan: number;
+  total_media: number;
+  batches_done: number;
+  enriched: number;
+  covers: number;
+  enrich_total: number;
+  enrich_done?: number;
+  skipped_large?: number;
+  skipped_memory?: number;
+  metadata_updated?: number;
+  elapsed?: number;
+  error_msg?: string | null;
+};
+
+export type StartImportOptions = {
+  channel: string;
+  start_msg_id?: number | null;
+  end_msg_id?: number | null;
+  skip_duplicates?: boolean;
+  enrich?: boolean;
+  generate_covers?: boolean;
+};
+
+function adminHeaders(password: string) {
+  return { "Content-Type": "application/json", "X-Admin-Password": password };
+}
+
+async function adminError(res: Response, fallback: string): Promise<never> {
+  if (res.status === 401) throw new Error("Invalid admin password");
+  // The backend puts the actual reason in `detail` on a 400 (bad range, no
+  // channel, and so on). Showing that beats showing a bare status code.
+  let detail = "";
+  try {
+    const body = await res.json();
+    detail = body?.detail || "";
+  } catch {
+    /* non-JSON error body — fall through to the generic message */
+  }
+  throw new Error(detail || `${fallback} (${res.status})`);
+}
+
+export async function startChannelImport(
+  password: string,
+  options: StartImportOptions
+): Promise<{ import_id: string }> {
+  const res = await fetch(`${getBase()}/api/books/admin/import`, {
+    method: "POST",
+    headers: adminHeaders(password),
+    body: JSON.stringify(options),
+  });
+  if (!res.ok) await adminError(res, "Failed to start import");
+  return res.json();
+}
+
+export async function fetchImportProgress(
+  password: string,
+  importId: string
+): Promise<ImportProgress> {
+  const res = await fetch(
+    `${getBase()}/api/books/admin/import/${encodeURIComponent(importId)}`,
+    { headers: { "X-Admin-Password": password }, cache: "no-store" }
+  );
+  if (!res.ok) await adminError(res, "Failed to fetch import progress");
+  const data = await res.json();
+  return data.data;
+}
+
+export async function cancelChannelImport(
+  password: string,
+  importId: string
+): Promise<void> {
+  const res = await fetch(
+    `${getBase()}/api/books/admin/import/${encodeURIComponent(importId)}/cancel`,
+    { method: "POST", headers: { "X-Admin-Password": password } }
+  );
+  if (!res.ok) await adminError(res, "Failed to cancel import");
+}
+
+export async function fetchEnrichStatus(
+  password: string
+): Promise<{ unenriched: number }> {
+  const res = await fetch(`${getBase()}/api/books/admin/enrich-status`, {
+    headers: { "X-Admin-Password": password },
+    cache: "no-store",
+  });
+  if (!res.ok) await adminError(res, "Failed to fetch enrich status");
+  return res.json();
+}
+
+export async function startEnrichPass(
+  password: string,
+  generateCovers: boolean = true
+): Promise<{ import_id: string | null; unenriched: number }> {
+  const res = await fetch(`${getBase()}/api/books/admin/enrich`, {
+    method: "POST",
+    headers: adminHeaders(password),
+    body: JSON.stringify({ generate_covers: generateCovers }),
+  });
+  if (!res.ok) await adminError(res, "Failed to start enrichment");
+  return res.json();
+}
+
 export function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
