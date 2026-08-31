@@ -2,7 +2,8 @@
 
 import { useState, FormEvent, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, FileUp, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { Upload, FileUp, CheckCircle2, AlertCircle, Loader2, CopyCheck } from "lucide-react";
+import Link from "next/link";
 
 const API_URL = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "");
 
@@ -15,19 +16,21 @@ export default function UploadPage() {
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState("");
   const [language, setLanguage] = useState("");
-  const [status, setStatus] = useState<"idle" | "uploading" | "success" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "uploading" | "success" | "error" | "duplicate">("idle");
   const [message, setMessage] = useState("");
   const [progress, setProgress] = useState(0);
+  const [duplicateBook, setDuplicateBook] = useState<{ id: string; title: string } | null>(null);
 
   function onFileChange(f: File | null) {
     setFile(f);
+    setStatus("idle");
+    setDuplicateBook(null);
     if (f && !title) {
       setTitle(f.name.replace(/\.[^.]+$/, "").replace(/[_-]/g, " "));
     }
   }
 
-  async function onSubmit(e: FormEvent) {
-    e.preventDefault();
+  async function doUpload(allowDuplicate: boolean) {
     if (!file || !API_URL) {
       setStatus("error");
       setMessage(API_URL ? "Please select a file." : "NEXT_PUBLIC_API_URL is not configured.");
@@ -37,6 +40,7 @@ export default function UploadPage() {
     setStatus("uploading");
     setProgress(0);
     setMessage("Uploading to Telegram…");
+    setDuplicateBook(null);
 
     const form = new FormData();
     form.append("file", file);
@@ -45,6 +49,7 @@ export default function UploadPage() {
     form.append("description", description);
     form.append("tags", tags);
     form.append("language", language);
+    if (allowDuplicate) form.append("allow_duplicate", "true");
 
     try {
       // Use XHR for upload progress
@@ -62,6 +67,18 @@ export default function UploadPage() {
               resolve(JSON.parse(xhr.responseText));
             } catch {
               reject(new Error("Invalid response"));
+            }
+          } else if (xhr.status === 409) {
+            try {
+              const err = JSON.parse(xhr.responseText);
+              const detail = err.detail || {};
+              const dupErr: any = new Error(
+                detail.message || "This book is already in the library."
+              );
+              dupErr.existingBook = detail.existing_book;
+              reject(dupErr);
+            } catch {
+              reject(new Error("This book is already in the library."));
             }
           } else {
             try {
@@ -83,9 +100,20 @@ export default function UploadPage() {
         else router.push("/");
       }, 1200);
     } catch (err: any) {
-      setStatus("error");
-      setMessage(err.message || "Upload failed");
+      if (err.existingBook) {
+        setStatus("duplicate");
+        setMessage(err.message);
+        setDuplicateBook({ id: err.existingBook.id, title: err.existingBook.title });
+      } else {
+        setStatus("error");
+        setMessage(err.message || "Upload failed");
+      }
     }
+  }
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    await doUpload(false);
   }
 
   return (
@@ -172,6 +200,30 @@ export default function UploadPage() {
             <CheckCircle2 className="w-4 h-4" />
             {message}
           </p>
+        )}
+
+        {status === "duplicate" && duplicateBook && (
+          <div className="rounded-xl border border-amber-700/50 bg-amber-950/30 p-4 space-y-3">
+            <p className="text-sm text-amber-300 flex items-start gap-2">
+              <CopyCheck className="w-4 h-4 mt-0.5 shrink-0" />
+              {message}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href={`/book/${duplicateBook.id}`}
+                className="text-xs px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300 hover:border-slate-500 transition-colors"
+              >
+                View existing book
+              </Link>
+              <button
+                type="button"
+                onClick={() => doUpload(true)}
+                className="text-xs px-3 py-1.5 rounded-lg border border-amber-600/50 text-amber-300 hover:bg-amber-900/30 transition-colors"
+              >
+                Upload anyway
+              </button>
+            </div>
+          </div>
         )}
 
         {status === "error" && (
