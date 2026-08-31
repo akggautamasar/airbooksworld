@@ -482,6 +482,14 @@ export default function BulkImportPanel({
                 )}
               </dl>
 
+              {progress.import_method === "forward-first" && (
+                <p className="text-xs text-amber-400/80">
+                  This channel&apos;s messages can&apos;t be read by the bot, so
+                  files are forwarded first and sorted afterwards. Slightly
+                  slower, same result.
+                </p>
+              )}
+
               {progress.error_msg && (
                 <p className="text-xs text-rose-400">{progress.error_msg}</p>
               )}
