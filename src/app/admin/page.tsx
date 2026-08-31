@@ -158,8 +158,22 @@ export default function AdminPage() {
   const loadBooks = useCallback(async () => {
     setLoadingBooks(true);
     try {
-      const res = await fetchBooks({ limit: 200 });
-      setBooks(res.books);
+      // The backend caps every single request at 200 books (see
+      // utils/books_routes.py), so a library bigger than that can never
+      // come back from one call — it was silently truncated here before.
+      // Keep paging with offset until we've pulled everything the backend
+      // says exists.
+      const PAGE_SIZE = 200;
+      let all: Book[] = [];
+      let offset = 0;
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const res = await fetchBooks({ limit: PAGE_SIZE, offset });
+        all = all.concat(res.books);
+        offset += res.books.length;
+        if (res.books.length < PAGE_SIZE || offset >= res.total) break;
+      }
+      setBooks(all);
     } finally {
       setLoadingBooks(false);
     }
