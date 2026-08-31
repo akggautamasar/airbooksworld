@@ -15,6 +15,7 @@ import {
   Sparkles,
   Wand2,
   FileText,
+  CopyCheck,
 } from "lucide-react";
 import {
   fetchBooks,
@@ -24,6 +25,7 @@ import {
   adminUploadCover,
   adminGenerateCover,
   adminGenerateAllCovers,
+  fetchDuplicateGroups,
   getStoredAdminPassword,
   storeAdminPassword,
   clearAdminPassword,
@@ -31,6 +33,7 @@ import {
   getCoverUrl,
   type Book,
   type GenerateAllCoversResult,
+  type DuplicateGroup,
 } from "@/lib/api";
 
 function CoverThumb({
@@ -150,6 +153,10 @@ export default function AdminPage() {
   const [generatingAll, setGeneratingAll] = useState(false);
   const [generateAllResult, setGenerateAllResult] = useState<GenerateAllCoversResult | null>(null);
 
+  const [checkingDuplicates, setCheckingDuplicates] = useState(false);
+  const [duplicateGroups, setDuplicateGroups] = useState<DuplicateGroup[] | null>(null);
+  const [removingDupId, setRemovingDupId] = useState<string | null>(null);
+
   useEffect(() => {
     const stored = getStoredAdminPassword();
     if (stored) setPassword(stored);
@@ -205,6 +212,50 @@ export default function AdminPage() {
       }
     } finally {
       setGeneratingAll(false);
+    }
+  }
+
+  async function handleFindDuplicates() {
+    if (!password) return;
+    setCheckingDuplicates(true);
+    setActionError("");
+    try {
+      const result = await fetchDuplicateGroups(password);
+      setDuplicateGroups(result.groups);
+    } catch (err) {
+      if (err instanceof Error && err.message.includes("Invalid admin password")) {
+        setActionError("Your session expired — log in again.");
+        logout();
+      } else {
+        setActionError("Couldn't check for duplicates. Try again.");
+      }
+    } finally {
+      setCheckingDuplicates(false);
+    }
+  }
+
+  async function handleRemoveDuplicate(id: string) {
+    if (!password) return;
+    setRemovingDupId(id);
+    setActionError("");
+    try {
+      await adminDeleteBook(id, password);
+      setBooks((prev) => prev.filter((b) => b.id !== id));
+      setDuplicateGroups(
+        (prev) =>
+          prev
+            ?.map((g) => ({ ...g, books: g.books.filter((b) => b.id !== id) }))
+            .filter((g) => g.books.length > 1) || null
+      );
+    } catch (err) {
+      if (err instanceof Error && err.message.includes("Invalid admin password")) {
+        setActionError("Your session expired — log in again.");
+        logout();
+      } else {
+        setActionError("Couldn't remove that duplicate. Try again.");
+      }
+    } finally {
+      setRemovingDupId(null);
     }
   }
 
@@ -328,6 +379,19 @@ export default function AdminPage() {
         </div>
         <div className="flex items-center gap-3">
           <button
+            onClick={handleFindDuplicates}
+            disabled={checkingDuplicates}
+            title="Scan the library for books uploaded more than once"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700 hover:border-brand-500 hover:text-brand-300 text-slate-300 text-sm transition-colors disabled:opacity-50"
+          >
+            {checkingDuplicates ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <CopyCheck className="w-3.5 h-3.5" />
+            )}
+            Find duplicates
+          </button>
+          <button
             onClick={handleGenerateAll}
             disabled={generatingAll}
             title="Generate covers for every book that doesn't have one yet — existing covers are left untouched"
@@ -358,6 +422,70 @@ export default function AdminPage() {
           {generateAllResult.failed.length > 0 &&
             ` · ${generateAllResult.failed.length} failed`}
           .
+        </div>
+      )}
+
+      {duplicateGroups && (
+        <div className="mb-4 bg-slate-900/60 border border-slate-800 rounded-xl px-4 py-3 space-y-3">
+          {duplicateGroups.length === 0 ? (
+            <p className="text-sm text-slate-400 flex items-center gap-1.5">
+              <CopyCheck className="w-4 h-4 text-emerald-400" /> No duplicates found.
+            </p>
+          ) : (
+            <>
+              <p className="text-sm text-slate-300">
+                Found {duplicateGroups.length} group
+                {duplicateGroups.length === 1 ? "" : "s"} of likely duplicates. The
+                suggested keeper (oldest upload) is starred — remove the rest.
+              </p>
+              <div className="space-y-4">
+                {duplicateGroups.map((group, gi) => (
+                  <div key={gi} className="border border-slate-800 rounded-lg p-3 space-y-2">
+                    <p className="text-xs text-slate-500">
+                      {group.method === "identical_file"
+                        ? "Identical file content"
+                        : "Same filename & size"}
+                    </p>
+                    {group.books.map((b) => (
+                      <div
+                        key={b.id}
+                        className="flex items-center justify-between gap-3 text-sm"
+                      >
+                        <div className="min-w-0 flex items-center gap-1.5">
+                          {b.suggested_keep && (
+                            <span title="Suggested keeper" className="text-amber-400">★</span>
+                          )}
+                          <span className="text-slate-200 truncate">{b.title}</span>
+                          <span className="text-slate-500 shrink-0">
+                            ({formatSize(b.size)}, {new Date(b.uploaded_at).toLocaleDateString()})
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Link
+                            href={`/book/${b.id}`}
+                            className="text-xs text-slate-400 hover:text-brand-300"
+                          >
+                            View
+                          </Link>
+                          <button
+                            onClick={() => handleRemoveDuplicate(b.id)}
+                            disabled={removingDupId === b.id}
+                            className="text-xs px-2 py-1 rounded-lg border border-rose-900/60 text-rose-400 hover:bg-rose-500/10 transition-colors disabled:opacity-50"
+                          >
+                            {removingDupId === b.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              "Remove"
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       )}
 
