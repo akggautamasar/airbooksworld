@@ -281,6 +281,9 @@ export type ImportProgress = {
   skipped_not_book: number;
   /** Messages the server's Telegram client could not parse; skipped, not books. */
   skipped_unreadable?: number;
+  /** "scan-first" normally; "forward-first" when the bot cannot read the source. */
+  import_method?: "scan-first" | "forward-first" | null;
+  read_access?: boolean | null;
   errors: number;
   fetched: number;
   total_scan: number;
