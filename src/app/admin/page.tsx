@@ -145,6 +145,7 @@ export default function AdminPage() {
 
   const [books, setBooks] = useState<Book[]>([]);
   const [loadingBooks, setLoadingBooks] = useState(false);
+  const [loadBooksError, setLoadBooksError] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<Book>>({});
   const [actionError, setActionError] = useState("");
@@ -164,6 +165,7 @@ export default function AdminPage() {
 
   const loadBooks = useCallback(async () => {
     setLoadingBooks(true);
+    setLoadBooksError("");
     try {
       // The backend caps every single request at 200 books (see
       // utils/books_routes.py), so a library bigger than that can never
@@ -181,6 +183,15 @@ export default function AdminPage() {
         if (res.books.length < PAGE_SIZE || offset >= res.total) break;
       }
       setBooks(all);
+    } catch (err) {
+      // Surface the failure instead of silently leaving the list empty —
+      // an empty list and a failed fetch look identical to the eye
+      // otherwise ("0 books, no books yet" when the real problem was a
+      // server error), which is exactly what made the last issue
+      // confusing to track down.
+      setLoadBooksError(
+        err instanceof Error ? err.message : "Failed to load books."
+      );
     } finally {
       setLoadingBooks(false);
     }
@@ -495,13 +506,20 @@ export default function AdminPage() {
         </div>
       )}
 
+      {loadBooksError && (
+        <div className="mb-4 text-sm text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-2.5 flex items-center gap-1.5">
+          <ShieldAlert className="w-4 h-4 shrink-0" />
+          Couldn&apos;t load the book list: {loadBooksError}
+        </div>
+      )}
+
       {loadingBooks ? (
         <div className="flex items-center gap-2 text-slate-500 py-16 justify-center">
           <Loader2 className="w-5 h-5 animate-spin" /> Loading books…
         </div>
-      ) : books.length === 0 ? (
+      ) : books.length === 0 && !loadBooksError ? (
         <p className="text-slate-500 py-16 text-center">No books yet.</p>
-      ) : (
+      ) : books.length === 0 ? null : (
         <div className="rounded-2xl border border-slate-800 overflow-hidden">
           {books.map((book) => (
             <div key={book.id} className="border-b border-slate-800 last:border-b-0 bg-slate-900/40">
