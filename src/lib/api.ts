@@ -85,7 +85,13 @@ export async function fetchBook(id: string): Promise<Book> {
   const res = await fetch(`${getBase()}/api/books/${id}`, {
     next: { revalidate: 60 },
   });
-  if (!res.ok) throw new Error(`Book not found`);
+  if (!res.ok) {
+    if (res.status === 404) throw new Error("Book not found");
+    // Don't relabel a real server error as "not found" — that hid the
+    // actual cause (a 500) behind a misleading message last time and made
+    // this much harder to diagnose than it needed to be.
+    throw new Error(`Failed to load book (server returned ${res.status})`);
+  }
   const data = await res.json();
   return data.book;
 }
