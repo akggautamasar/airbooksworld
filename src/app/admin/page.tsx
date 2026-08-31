@@ -35,6 +35,7 @@ import {
   type GenerateAllCoversResult,
   type DuplicateGroup,
 } from "@/lib/api";
+import BulkImportPanel from "@/components/BulkImportPanel";
 
 function CoverThumb({
   book,
@@ -295,6 +296,13 @@ export default function AdminPage() {
     setPasswordInput("");
   }
 
+  const handleSessionExpired = useCallback(() => {
+    setActionError("Your session expired — log in again.");
+    clearAdminPassword();
+    setPassword(null);
+    setPasswordInput("");
+  }, []);
+
   function startEdit(book: Book) {
     setEditingId(book.id);
     setEditForm({
@@ -423,6 +431,12 @@ export default function AdminPage() {
           </button>
         </div>
       </div>
+
+      <BulkImportPanel
+        password={password}
+        onImported={loadBooks}
+        onSessionExpired={handleSessionExpired}
+      />
 
       {generateAllResult && (
         <div className="mb-4 text-sm text-slate-300 bg-slate-900/60 border border-slate-800 rounded-xl px-4 py-2.5">
