@@ -18,6 +18,7 @@ export type Book = {
   reader_format?: string | null;
   reader_status?: ReaderStatus;
   reader_error?: string | null;
+  file_hash?: string | null;
 };
 
 export type ReaderInfo = {
@@ -219,6 +220,31 @@ export async function adminGenerateAllCovers(
   if (!res.ok) {
     if (res.status === 401) throw new Error("Invalid admin password");
     throw new Error(`Failed to generate covers: ${res.status}`);
+  }
+  return res.json();
+}
+
+export type DuplicateGroup = {
+  method: "identical_file" | "same_name_and_size";
+  books: (Book & { suggested_keep: boolean })[];
+};
+
+export type DuplicatesResponse = {
+  status: string;
+  group_count: number;
+  duplicate_book_count: number;
+  groups: DuplicateGroup[];
+};
+
+export async function fetchDuplicateGroups(
+  password: string
+): Promise<DuplicatesResponse> {
+  const res = await fetch(`${getBase()}/api/books/admin/duplicates`, {
+    headers: { "X-Admin-Password": password },
+  });
+  if (!res.ok) {
+    if (res.status === 401) throw new Error("Invalid admin password");
+    throw new Error(`Failed to fetch duplicates: ${res.status}`);
   }
   return res.json();
 }
