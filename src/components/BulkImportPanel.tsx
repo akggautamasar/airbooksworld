@@ -462,6 +462,9 @@ export default function BulkImportPanel({
                 {progress.skipped_not_book > 0 && (
                   <Stat label="Not books" value={progress.skipped_not_book} />
                 )}
+                {!!progress.skipped_unreadable && (
+                  <Stat label="Unreadable" value={progress.skipped_unreadable} />
+                )}
                 {progress.enrich_total > 0 && (
                   <Stat
                     label="Metadata read"
