@@ -279,6 +279,8 @@ export type ImportProgress = {
   skipped: number;
   skipped_duplicate: number;
   skipped_not_book: number;
+  /** Messages the server's Telegram client could not parse; skipped, not books. */
+  skipped_unreadable?: number;
   errors: number;
   fetched: number;
   total_scan: number;
