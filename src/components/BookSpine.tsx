@@ -23,10 +23,10 @@ export function BookSpine({ book, onOpen }: Props) {
   const cover = book.cover_message_id && !failed ? getCoverUrl(book.id, book.updated_at) : null;
   const seed = hash(book.id || book.title);
 
-  // The reference shelf is made from very slim physical spines, not cards.
-  const width = 19 + (seed % 12); // 19–30px desktop
-  const height = 178 + ((seed >> 4) % 74); // 178–251px desktop
-  const rotation = ((seed % 17) - 8) * 0.72; // restrained natural leaning
+  // Physical-looking spines: narrow, tightly packed, with small deterministic differences.
+  const width = 18 + (seed % 11); // 18–28px
+  const height = 218 + ((seed >> 4) % 67); // 218–284px
+  const rotation = ((seed % 17) - 8) * 0.68; // about -5.4° to +5.4°
   const depth = 2 + (seed % 5);
   const palettes = [
     ["#58635f", "#303b38"],
