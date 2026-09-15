@@ -53,22 +53,17 @@ export default function RecommendationAdminPage() {
 
   async function loadPublished(): Promise<Collection[]> {
     if (!savedPassword) return [];
-
-    // Do not depend on /tags for collection discovery. The collection itself is
-    // represented by tags on books, so search for recommendation-title tags and
-    // paginate through every matching book. This avoids missing collections when
-    // the backend tag index is incomplete/stale or the catalog is large.
     const discovered = new Map<string, Book>();
     let offset = 0;
-    let totalMatches = 0;
     do {
       const data = await api(`/api/books?q=${encodeURIComponent(TITLE)}&limit=${PAGE_SIZE}&offset=${offset}`);
       const items = (data.books || []) as Book[];
-      totalMatches = Number(data.total || 0);
       for (const book of items) discovered.set(book.id, book);
       offset += items.length;
-      if (!items.length || offset >= totalMatches || items.length < PAGE_SIZE) break;
-    } while (offset < totalMatches);
+      // The backend's `total` is the whole library size, not the filtered count,
+      // so the only reliable pagination stop is an empty/short filtered page.
+      if (!items.length || items.length < PAGE_SIZE) break;
+    } while (offset < 100000);
 
     const titles = Array.from(new Set(Array.from(discovered.values()).flatMap((book) => (book.tags || []).map(cleanTitle).filter(Boolean))));
     const result: Collection[] = [];
@@ -161,8 +156,6 @@ export default function RecommendationAdminPage() {
     if (!savedPassword || !confirm(`Remove “${item.title}” from recommendation shelves?`)) return;
     setBusy(true); setMessage("");
     try {
-      // Reload the collection immediately before deleting so we never PATCH a
-      // stale set of books from an older admin session.
       const data = await api(`/api/books?tag=${encodeURIComponent(TITLE + item.title)}&limit=${PAGE_SIZE}&offset=0`);
       const currentBooks = (data.books || []) as Book[];
       if (!currentBooks.length) { await loadPublished(); setMessage(`“${item.title}” is already absent from the server.`); return; }
@@ -171,7 +164,9 @@ export default function RecommendationAdminPage() {
       }
       const verify = await api(`/api/books?tag=${encodeURIComponent(TITLE + item.title)}&limit=1&offset=0`);
       await loadPublished();
-      if (Number(verify.total || 0) > 0) throw new Error(`The server still reports ${verify.total} book(s) in this collection after deletion.`);
+      // `total` from this backend is the whole library count; `count` is the
+      // filtered result count, which is what we must use to verify deletion.
+      if (Number(verify.count || 0) > 0) throw new Error(`The server still reports ${verify.count} book(s) in this collection after deletion.`);
       if (editing === item.title) reset();
       setMessage(`Removed “${item.title}” — confirmed by the server.`);
     } catch (error) { setMessage(error instanceof Error ? error.message : "Couldn't remove collection."); }
