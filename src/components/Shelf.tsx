@@ -22,6 +22,45 @@ export function Shelf({ books }: { books: Book[] }) {
     requestAnimationFrame(() => { el.scrollLeft = el.scrollWidth / 3; });
   }, [books.length, copies]);
 
+  // The reference shelf does not simply slide sideways: as the rail moves,
+  // each physical book swivels around its vertical spine axis.  Drive the
+  // effect directly on the book nodes so scrolling stays smooth without
+  // re-rendering the whole shelf on every scroll event.
+  useEffect(() => {
+    const el = rail.current;
+    if (!el) return;
+    const updateSwivel = () => {
+      const railRect = el.getBoundingClientRect();
+      const center = railRect.left + railRect.width / 2;
+      const half = Math.max(1, railRect.width * 0.48);
+      const nodes = el.querySelectorAll<HTMLElement>(".book-spine-hit");
+      nodes.forEach((node) => {
+        const r = node.getBoundingClientRect();
+        const bookCenter = r.left + r.width / 2;
+        const normalized = Math.max(-1, Math.min(1, (bookCenter - center) / half));
+        const angle = normalized * -20;
+        const depth = (1 - Math.abs(normalized)) * 30;
+        const scale = 1 + (1 - Math.abs(normalized)) * 0.018;
+        node.style.setProperty("--swivel-y", `${angle.toFixed(2)}deg`);
+        node.style.setProperty("--swivel-z", `${depth.toFixed(1)}px`);
+        node.style.setProperty("--swivel-scale", scale.toFixed(3));
+      });
+    };
+    let frame = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(updateSwivel);
+    };
+    updateSwivel();
+    el.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll, { passive: true });
+    return () => {
+      cancelAnimationFrame(frame);
+      el.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, [items.length]);
+
   function wheel(e: React.WheelEvent<HTMLDivElement>) {
     if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { e.preventDefault(); e.currentTarget.scrollLeft += e.deltaY; }
   }
