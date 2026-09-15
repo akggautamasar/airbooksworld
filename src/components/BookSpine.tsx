@@ -16,24 +16,28 @@ function hash(value: string) {
   return Math.abs(n);
 }
 
-// Fixed physical-spine variants sampled from the supplied reference: broad,
-// tightly packed, upright books with a small repeating set of widths/heights
-// and muted olive, red, blue, cream, charcoal, yellow, pink and teal tones.
+// Rich, high-contrast colours sampled from the supplied reference shelf.
+// The variants repeat deliberately so the rail feels like a curated physical
+// collection rather than a row of randomly generated muted gradients.
 const SPINE_VARIANTS = [
-  { width: 30, height: 248, light: "#6f7773", dark: "#3f4845" },
-  { width: 34, height: 266, light: "#897b3e", dark: "#5e5328" },
-  { width: 38, height: 258, light: "#7c2e27", dark: "#4d211d" },
-  { width: 42, height: 270, light: "#d1d0c8", dark: "#989891" },
-  { width: 36, height: 254, light: "#50606d", dark: "#303941" },
-  { width: 40, height: 244, light: "#789daa", dark: "#486a77" },
-  { width: 32, height: 272, light: "#252628", dark: "#0d0d0e" },
-  { width: 44, height: 260, light: "#8d7d66", dark: "#594c3e" },
-  { width: 35, height: 250, light: "#964a60", dark: "#642f3e" },
-  { width: 39, height: 268, light: "#c36e9e", dark: "#8f3f6d" },
-  { width: 43, height: 256, light: "#558389", dark: "#31565a" },
-  { width: 31, height: 246, light: "#b7bbb6", dark: "#777c79" },
-  { width: 37, height: 262, light: "#54565a", dark: "#242528" },
-  { width: 41, height: 252, light: "#8f8f89", dark: "#5e5e59" },
+  { width: 30, height: 248, light: "#9a9995", dark: "#4f4e4b" },
+  { width: 34, height: 266, light: "#83743a", dark: "#413a1f" },
+  { width: 38, height: 258, light: "#a33a2f", dark: "#5b211c" },
+  { width: 42, height: 270, light: "#e2e2dc", dark: "#a4a49e" },
+  { width: 36, height: 254, light: "#536875", dark: "#263943" },
+  { width: 40, height: 244, light: "#6796a4", dark: "#2e5968" },
+  { width: 32, height: 272, light: "#252628", dark: "#070708" },
+  { width: 44, height: 260, light: "#a18b69", dark: "#554632" },
+  { width: 35, height: 250, light: "#a64b61", dark: "#642534" },
+  { width: 39, height: 268, light: "#d06fa5", dark: "#8b2f68" },
+  { width: 43, height: 256, light: "#55939e", dark: "#28565e" },
+  { width: 31, height: 246, light: "#c5c9c5", dark: "#777b78" },
+  { width: 37, height: 262, light: "#55565b", dark: "#191a1d" },
+  { width: 41, height: 252, light: "#999993", dark: "#555550" },
+  { width: 33, height: 260, light: "#c25a38", dark: "#713021" },
+  { width: 45, height: 246, light: "#5f718b", dark: "#26384f" },
+  { width: 36, height: 270, light: "#8f355d", dark: "#4b1832" },
+  { width: 40, height: 255, light: "#6f9345", dark: "#3d5726" },
 ] as const;
 
 export function BookSpine({ book, onOpen }: Props) {
@@ -43,7 +47,7 @@ export function BookSpine({ book, onOpen }: Props) {
   const cover = book.cover_message_id && !failed ? getCoverUrl(book.id, book.updated_at) : null;
   const seed = hash(book.id || book.title);
   const variant = SPINE_VARIANTS[seed % SPINE_VARIANTS.length];
-  const depth = 5 + (seed % 5); // visible physical page/block extrusion
+  const depth = 5 + (seed % 5);
 
   function open() {
     const r = ref.current?.getBoundingClientRect();
@@ -67,6 +71,7 @@ export function BookSpine({ book, onOpen }: Props) {
         style={{ transform: `translate3d(0, ${hovered ? -18 : 0}px, ${hovered ? 70 : 0}px)`, zIndex: hovered ? 80 : 1 }}>
         <span className="book-spine-cover absolute inset-0 overflow-hidden rounded-[1px]" style={{ background: `linear-gradient(100deg, ${variant.light}, ${variant.dark})` }} />
         {cover && <img src={cover} alt="" onError={() => setFailed(true)} className="absolute inset-0 z-[2] h-full w-full rounded-[1px] object-cover object-center opacity-100" />}
+        {!cover && <span className="book-spine-art absolute inset-0 z-[2]" style={{ background: `linear-gradient(135deg, ${variant.light} 0%, ${variant.dark} 52%, ${variant.light} 100%)` }} />}
         <span className="book-spine-cover-shade absolute inset-0 z-[3] rounded-[1px]" />
         <span className="book-spine-edge absolute inset-y-0 right-0 z-[4] w-[2px]" />
         <span className="book-spine-top absolute inset-x-0 top-0 z-[4] h-[3px]" />
