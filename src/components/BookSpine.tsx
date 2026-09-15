@@ -16,24 +16,33 @@ function hash(value: string) {
   return Math.abs(n);
 }
 
+// Fixed physical-spine variants sampled from the supplied reference: broad,
+// tightly packed, upright books with a small repeating set of widths/heights
+// and muted olive, red, blue, cream, charcoal, yellow, pink and teal tones.
+const SPINE_VARIANTS = [
+  { width: 30, height: 248, light: "#6f7773", dark: "#3f4845" },
+  { width: 34, height: 266, light: "#897b3e", dark: "#5e5328" },
+  { width: 38, height: 258, light: "#7c2e27", dark: "#4d211d" },
+  { width: 42, height: 270, light: "#d1d0c8", dark: "#989891" },
+  { width: 36, height: 254, light: "#50606d", dark: "#303941" },
+  { width: 40, height: 244, light: "#789daa", dark: "#486a77" },
+  { width: 32, height: 272, light: "#252628", dark: "#0d0d0e" },
+  { width: 44, height: 260, light: "#8d7d66", dark: "#594c3e" },
+  { width: 35, height: 250, light: "#964a60", dark: "#642f3e" },
+  { width: 39, height: 268, light: "#c36e9e", dark: "#8f3f6d" },
+  { width: 43, height: 256, light: "#558389", dark: "#31565a" },
+  { width: 31, height: 246, light: "#b7bbb6", dark: "#777c79" },
+  { width: 37, height: 262, light: "#54565a", dark: "#242528" },
+  { width: 41, height: 252, light: "#8f8f89", dark: "#5e5e59" },
+] as const;
+
 export function BookSpine({ book, onOpen }: Props) {
   const ref = useRef<HTMLButtonElement>(null);
   const [hovered, setHovered] = useState(false);
   const [failed, setFailed] = useState(false);
   const cover = book.cover_message_id && !failed ? getCoverUrl(book.id, book.updated_at) : null;
   const seed = hash(book.id || book.title);
-
-  // The reference uses broad, tightly packed physical spines rather than hairline strips.
-  const width = 26 + (seed % 19); // 26–44px desktop
-  const height = 220 + ((seed >> 4) % 61); // 220–280px desktop
-  const rotation = ((seed % 17) - 8) * 0.68;
-  const depth = 2 + (seed % 5);
-  const palettes = [
-    ["#58635f", "#303b38"], ["#75675c", "#433a34"], ["#8b6f61", "#57453c"],
-    ["#68758a", "#414c5d"], ["#8b7c68", "#594e43"], ["#6f7773", "#3f4845"],
-    ["#8c6662", "#563f3c"], ["#706d7d", "#474552"],
-  ] as const;
-  const [light, dark] = palettes[seed % palettes.length];
+  const variant = SPINE_VARIANTS[seed % SPINE_VARIANTS.length];
 
   function open() {
     const r = ref.current?.getBoundingClientRect();
@@ -41,8 +50,14 @@ export function BookSpine({ book, onOpen }: Props) {
   }
 
   const vars = {
-    "--book-w": `${width}px`, "--book-h": `${height}px`, "--book-rotation": `${rotation}deg`,
-    "--book-depth": `${depth}px`, "--spine-light": light, "--spine-dark": dark,
+    "--book-w": `${variant.width}px`,
+    "--book-h": `${variant.height}px`,
+    // Every spine is upright. The reference has visual variation from width,
+    // height, covers and edge shading, not from tilted books.
+    "--book-rotation": "0deg",
+    "--book-depth": "3px",
+    "--spine-light": variant.light,
+    "--spine-dark": variant.dark,
   } as CSSProperties;
 
   return (
@@ -50,9 +65,10 @@ export function BookSpine({ book, onOpen }: Props) {
       style={vars} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
       onFocus={() => setHovered(true)} onBlur={() => setHovered(false)} onClick={open}>
       <span className="book-spine-body absolute inset-0 origin-bottom overflow-hidden rounded-[1px]"
-        style={{ transform: `translateZ(${hovered ? 80 : 0}px) translateY(${hovered ? -18 : 0}px) rotateZ(${hovered ? 0 : rotation}deg)`, zIndex: hovered ? 80 : 1 }}>
-        <span className="book-spine-cover absolute inset-0" style={{ background: `linear-gradient(100deg, ${light}, ${dark})` }} />
-        {cover && <img src={cover} alt="" onError={() => setFailed(true)} className="absolute inset-0 h-full w-full object-cover object-left opacity-[.92] mix-blend-multiply" />}
+        style={{ transform: `translateZ(${hovered ? 80 : 0}px) translateY(${hovered ? -18 : 0}px)`, zIndex: hovered ? 80 : 1 }}>
+        <span className="book-spine-cover absolute inset-0" style={{ background: `linear-gradient(100deg, ${variant.light}, ${variant.dark})` }} />
+        {cover && <img src={cover} alt="" onError={() => setFailed(true)} className="absolute inset-0 h-full w-full object-cover object-center opacity-100" />}
+        <span className="book-spine-cover-shade absolute inset-0" />
         <span className="book-spine-edge absolute inset-y-0 right-0 w-[2px]" />
         <span className="book-spine-top absolute inset-x-0 top-0 h-[3px]" />
         <span className="book-spine-title absolute inset-y-3 left-1/2 -translate-x-1/2 overflow-hidden whitespace-nowrap [writing-mode:vertical-rl] rotate-180 font-display text-[8px] leading-none tracking-[.045em] text-white drop-shadow-[0_1px_2px_rgba(0,0,0,.8)]">{book.title}</span>
