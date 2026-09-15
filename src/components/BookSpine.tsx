@@ -48,8 +48,25 @@ function getPhysicalSize(book: Book, seed: number) {
       height: pages > 420 ? 252 : pages < 260 ? 204 : 226,
     };
   }
-  // No page count is exposed by today's backend, so do not fake one from bytes.
   return { width: 26 + (seed % 27), height: 214 + ((seed >> 4) % 61) };
+}
+
+function richColor(hex: string) {
+  const value = hex.replace("#", "");
+  const r = Number.parseInt(value.slice(0, 2), 16) / 255;
+  const g = Number.parseInt(value.slice(2, 4), 16) / 255;
+  const b = Number.parseInt(value.slice(4, 6), 16) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  const l = (max + min) / 2, d = max - min;
+  let h = 0, sat = 0;
+  if (d) {
+    sat = d / (1 - Math.abs(2 * l - 1));
+    if (max === r) h = 60 * (((g - b) / d) % 6);
+    else if (max === g) h = 60 * ((b - r) / d + 2);
+    else h = 60 * ((r - g) / d + 4);
+    if (h < 0) h += 360;
+  }
+  return `hsl(${Math.round(h)} ${Math.round(Math.max(52, Math.min(82, sat * 125)))}% ${Math.round(Math.max(25, Math.min(68, l * 100)))}%)`;
 }
 
 function readableInk(hex: string) {
@@ -64,6 +81,7 @@ export function BookSpine({ book, onOpen }: Props) {
   const ref = useRef<HTMLButtonElement>(null);
   const [hovered, setHovered] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [coverColor, setCoverColor] = useState<string | null>(null);
   const [coverInk, setCoverInk] = useState<string | null>(null);
   const cover = book.cover_message_id && !failed ? getCoverUrl(book.id, book.updated_at) : null;
   const seed = hash(book.id || book.title);
@@ -72,6 +90,7 @@ export function BookSpine({ book, onOpen }: Props) {
   const depth = 4 + (seed % 6);
   const lean = -5.2 + ((seed >> 3) % 11) * 1.02;
   const ink = coverInk || variant.ink;
+  const spineBase = coverColor || variant.mid;
 
   function open() {
     const r = ref.current?.getBoundingClientRect();
@@ -95,9 +114,13 @@ export function BookSpine({ book, onOpen }: Props) {
         if (max > 238 && max - min < 12) continue;
         r += pixels[i]; g += pixels[i + 1]; b += pixels[i + 2]; count++;
       }
-      if (count) setCoverInk(readableInk(`#${[r, g, b].map(v => Math.round(v / count).toString(16).padStart(2, "0")).join("")}`));
+      if (count) {
+        const hex = `#${[r, g, b].map(v => Math.round(v / count).toString(16).padStart(2, "0")).join("")}`;
+        setCoverColor(richColor(hex));
+        setCoverInk(readableInk(hex));
+      }
     } catch {
-      // CORS-protected covers keep the deterministic reference ink colour.
+      // CORS-protected covers keep the deterministic reference treatment.
     }
   }
 
@@ -115,10 +138,11 @@ export function BookSpine({ book, onOpen }: Props) {
     <button ref={ref} type="button" aria-label={`Open ${book.title}`} className="book-spine-hit shrink-0 self-end relative" style={vars}
       onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} onFocus={() => setHovered(true)} onBlur={() => setHovered(false)} onClick={open}>
       <span className="book-spine-body absolute inset-0 origin-bottom overflow-visible rounded-[1px]" style={{ transform: `translate3d(0, ${hovered ? -16 : 0}px, ${hovered ? 65 : 0}px) rotateY(${hovered ? 0 : lean * 0.18}deg)`, zIndex: hovered ? 80 : 1 }}>
-        <span className="book-spine-cover absolute inset-0 overflow-hidden rounded-[1px]" style={{ background: cover ? `linear-gradient(105deg, rgba(255,255,255,.14), transparent 20%, rgba(0,0,0,.12) 82%, rgba(0,0,0,.24)), linear-gradient(115deg, var(--spine-light), var(--spine-mid) 45%, var(--spine-dark))` : `linear-gradient(105deg, ${variant.light}, ${variant.mid} 42%, ${variant.dark})` }} />
-        {cover && <img src={cover} alt="" crossOrigin="anonymous" onLoad={sampleCover} onError={() => setFailed(true)} className="absolute inset-0 z-[2] h-full w-full rounded-[1px] object-cover object-center" />}
+        <span className="book-spine-cover absolute inset-0 overflow-hidden rounded-[1px]" style={{ background: cover ? `linear-gradient(105deg, rgba(255,255,255,.22), transparent 20%, rgba(0,0,0,.13) 82%, rgba(0,0,0,.27)), linear-gradient(115deg, color-mix(in srgb, ${spineBase} 78%, white), ${spineBase} 46%, color-mix(in srgb, ${spineBase} 68%, black))` : `linear-gradient(105deg, ${variant.light}, ${variant.mid} 42%, ${variant.dark})` }} />
+        {cover && <img src={cover} alt="" crossOrigin="anonymous" onLoad={sampleCover} onError={() => setFailed(true)} className="absolute inset-0 z-[1] h-full w-full rounded-[1px] object-cover object-center opacity-0" />}
         {!cover && <span className="book-spine-art absolute inset-0 z-[2]" style={{ background: `linear-gradient(135deg, ${variant.light} 0%, ${variant.mid} 44%, ${variant.dark} 78%, ${variant.light} 100%)` }} />}
 
+        {/* The narrow lacquer highlight and broad sheen are the premium detail visible in the uploaded reference. */}
         <span className="book-spine-material absolute inset-0 z-[3] rounded-[1px]" />
         <span className="book-spine-gloss absolute inset-y-0 left-[18%] z-[4] w-px" />
         <span className="book-spine-gloss-wide absolute inset-y-0 left-[22%] z-[4] w-[5px]" />
