@@ -17,33 +17,10 @@ type Collection = { title: string; description: string; curator: string; quote: 
 function base() { return API_URL.replace(/\/$/, ""); }
 function encoded(value: string) { return encodeURIComponent(value.trim()); }
 function cleanTitle(tag: string) { return tag.startsWith(TITLE) ? tag.slice(TITLE.length).trim() : ""; }
-function metadata(tags: string[], prefix: string, title: string) {
-  const marker = `${prefix}${encoded(title)}|`;
-  const tag = tags.find((item) => item.startsWith(marker));
-  return tag ? decodeURIComponent(tag.slice(marker.length)).trim() : "";
-}
-function collectionTags(title: string, description: string, curator: string, quote: string) {
-  const name = title.trim();
-  const tags = [TITLE + name];
-  if (description.trim()) tags.push(`${DESC}${encoded(name)}|${encoded(description)}`);
-  if (curator.trim()) tags.push(`${CURATOR}${encoded(name)}|${encoded(curator)}`);
-  if (quote.trim()) tags.push(`${QUOTE}${encoded(name)}|${encoded(quote)}`);
-  return tags;
-}
-function removeCollection(tags: string[], title: string) {
-  const marker = encoded(title);
-  return tags.filter((tag) => tag !== TITLE + title && !tag.startsWith(`${DESC}${marker}|`) && !tag.startsWith(`${CURATOR}${marker}|`) && !tag.startsWith(`${QUOTE}${marker}|`));
-}
-function makeCollection(title: string, books: Book[]): Collection {
-  const first = books[0];
-  return {
-    title,
-    description: first ? metadata(first.tags || [], DESC, title) || "Books chosen to inspire a brighter, more curious life." : "Books chosen to inspire a brighter, more curious life.",
-    curator: first ? metadata(first.tags || [], CURATOR, title) : "",
-    quote: first ? metadata(first.tags || [], QUOTE, title) : "",
-    books,
-  };
-}
+function metadata(tags: string[], prefix: string, title: string) { const marker = `${prefix}${encoded(title)}|`; const tag = tags.find((item) => item.startsWith(marker)); return tag ? decodeURIComponent(tag.slice(marker.length)).trim() : ""; }
+function collectionTags(title: string, description: string, curator: string, quote: string) { const name = title.trim(); const tags = [TITLE + name]; if (description.trim()) tags.push(`${DESC}${encoded(name)}|${encoded(description)}`); if (curator.trim()) tags.push(`${CURATOR}${encoded(name)}|${encoded(curator)}`); if (quote.trim()) tags.push(`${QUOTE}${encoded(name)}|${encoded(quote)}`); return tags; }
+function removeCollection(tags: string[], title: string) { const marker = encoded(title); return tags.filter((tag) => tag !== TITLE + title && !tag.startsWith(`${DESC}${marker}|`) && !tag.startsWith(`${CURATOR}${marker}|`) && !tag.startsWith(`${QUOTE}${marker}|`)); }
+function makeCollection(title: string, books: Book[]): Collection { const first = books[0]; return { title, description: first ? metadata(first.tags || [], DESC, title) || "Books chosen to inspire a brighter, more curious life." : "Books chosen to inspire a brighter, more curious life.", curator: first ? metadata(first.tags || [], CURATOR, title) : "", quote: first ? metadata(first.tags || [], QUOTE, title) : "", books }; }
 
 export default function RecommendationAdminPage() {
   const [password, setPassword] = useState("");
@@ -64,66 +41,45 @@ export default function RecommendationAdminPage() {
 
   useEffect(() => { const value = window.sessionStorage.getItem("airbooks_admin_password"); if (value) setSavedPassword(value); }, []);
 
-  async function api(path: string, init: RequestInit = {}) {
-    const response = await fetch(`${base()}${path}`, { cache: "no-store", ...init });
-    if (!response.ok) throw new Error(response.status === 401 ? "Invalid admin password" : `Request failed (${response.status})`);
-    return response.json();
-  }
+  async function api(path: string, init: RequestInit = {}) { const response = await fetch(`${base()}${path}`, { cache: "no-store", ...init }); if (!response.ok) throw new Error(response.status === 401 ? "Invalid admin password" : `Request failed (${response.status})`); return response.json(); }
 
-  async function loadPublished() {
-    if (!savedPassword) return;
+  async function loadPublished(): Promise<Collection[]> {
+    if (!savedPassword) return [];
     const tagData = await api("/api/books/tags");
     const titles = Array.from(new Set((tagData.tags || []).map(cleanTitle).filter(Boolean))) as string[];
     const result: Collection[] = [];
     for (const name of titles) {
-      try {
-        const data = await api(`/api/books?tag=${encodeURIComponent(TITLE + name)}&limit=${PAGE_SIZE}&offset=0`);
-        const items = (data.books || []) as Book[];
-        if (items.length) result.push(makeCollection(name, items));
-      } catch { /* keep other collections visible */ }
+      try { const data = await api(`/api/books?tag=${encodeURIComponent(TITLE + name)}&limit=${PAGE_SIZE}&offset=0`); const items = (data.books || []) as Book[]; if (items.length) result.push(makeCollection(name, items)); } catch { /* keep other collections visible */ }
     }
     setPublished(result);
+    return result;
   }
 
   async function loadBooks(search = query) {
     if (!savedPassword) return;
     setBusy(true); setMessage("");
-    try {
-      const params = new URLSearchParams({ limit: String(PAGE_SIZE), offset: "0" });
-      if (search.trim()) params.set("q", search.trim());
-      const data = await api(`/api/books?${params.toString()}`);
-      setBooks((data.books || []) as Book[]); setTotal(data.total || 0);
-    } catch (error) { setMessage(error instanceof Error ? error.message : "Couldn't load books."); }
+    try { const params = new URLSearchParams({ limit: String(PAGE_SIZE), offset: "0" }); if (search.trim()) params.set("q", search.trim()); const data = await api(`/api/books?${params.toString()}`); setBooks((data.books || []) as Book[]); setTotal(data.total || 0); }
+    catch (error) { setMessage(error instanceof Error ? error.message : "Couldn't load books."); }
     finally { setBusy(false); }
   }
 
   useEffect(() => { if (savedPassword) { loadBooks(""); loadPublished().catch((error) => setMessage(error instanceof Error ? error.message : "Couldn't load collections.")); } }, [savedPassword]);
   useEffect(() => { if (!savedPassword) return; const timer = window.setTimeout(() => loadBooks(query), 300); return () => window.clearTimeout(timer); }, [query, savedPassword]);
-
   const selectedBooks = useMemo(() => books.filter((book) => selected.includes(book.id)), [books, selected]);
-
   function reset() { setEditing(null); setTitle(""); setDescription(""); setCurator(""); setQuote(""); setSelected([]); setMessage(""); }
   function toggle(id: string) { setSelected((items) => items.includes(id) ? items.filter((item) => item !== id) : [...items, id]); }
 
   async function editCollection(item: Collection) {
     setBusy(true); setMessage("");
-    try {
-      const data = await api(`/api/books?tag=${encodeURIComponent(TITLE + item.title)}&limit=${PAGE_SIZE}&offset=0`);
-      const tagged = (data.books || []) as Book[];
-      setBooks((prev) => { const map = new Map(prev.map((b) => [b.id, b])); tagged.forEach((b) => map.set(b.id, b)); return Array.from(map.values()); });
-      setEditing(item.title); setTitle(item.title); setDescription(item.description); setCurator(item.curator); setQuote(item.quote); setSelected(tagged.map((book) => book.id));
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } catch (error) { setMessage(error instanceof Error ? error.message : "Couldn't load collection books."); }
+    try { const data = await api(`/api/books?tag=${encodeURIComponent(TITLE + item.title)}&limit=${PAGE_SIZE}&offset=0`); const tagged = (data.books || []) as Book[]; setBooks((prev) => { const map = new Map(prev.map((b) => [b.id, b])); tagged.forEach((b) => map.set(b.id, b)); return Array.from(map.values()); }); setEditing(item.title); setTitle(item.title); setDescription(item.description); setCurator(item.curator); setQuote(item.quote); setSelected(tagged.map((book) => book.id)); window.scrollTo({ top: 0, behavior: "smooth" }); }
+    catch (error) { setMessage(error instanceof Error ? error.message : "Couldn't load collection books."); }
     finally { setBusy(false); }
   }
 
   async function login(event: React.FormEvent) {
     event.preventDefault(); setLoginError("");
-    try {
-      const response = await fetch(`${base()}/api/books/admin/verify`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password }) });
-      if (!response.ok) return setLoginError("Incorrect password.");
-      window.sessionStorage.setItem("airbooks_admin_password", password); setSavedPassword(password);
-    } catch { setLoginError("Couldn't reach the server."); }
+    try { const response = await fetch(`${base()}/api/books/admin/verify`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password }) }); if (!response.ok) return setLoginError("Incorrect password."); window.sessionStorage.setItem("airbooks_admin_password", password); setSavedPassword(password); }
+    catch { setLoginError("Couldn't reach the server."); }
   }
 
   async function saveCollection() {
@@ -139,22 +95,17 @@ export default function RecommendationAdminPage() {
       [...oldBooks, ...selectedBooks, ...books].forEach((book) => all.set(book.id, book));
       const idsToUpdate = new Set([...oldBooks.map((b) => b.id), ...selected]);
       const tagsToAdd = collectionTags(name, description, curator, quote);
-
       for (const id of idsToUpdate) {
-        const book = all.get(id);
-        if (!book) continue;
-        let tags = [...(book.tags || [])];
-        if (editing) tags = removeCollection(tags, editing);
-        if (targetIds.has(id)) tags = Array.from(new Set([...tags, ...tagsToAdd]));
-        await api(`/api/books/${encodeURIComponent(id)}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json", "X-Admin-Password": savedPassword },
-          body: JSON.stringify({ tags }),
-        });
+        const book = all.get(id); if (!book) continue;
+        let tags = [...(book.tags || [])]; if (editing) tags = removeCollection(tags, editing); if (targetIds.has(id)) tags = Array.from(new Set([...tags, ...tagsToAdd]));
+        await api(`/api/books/${encodeURIComponent(id)}`, { method: "PATCH", headers: { "Content-Type": "application/json", "X-Admin-Password": savedPassword }, body: JSON.stringify({ tags }) });
       }
+      const fresh = await loadPublished();
+      const actual = fresh.find((item) => item.title === name);
       setEditing(name);
-      setMessage(`Saved “${name}” with ${selected.length} book${selected.length === 1 ? "" : "s"}.`);
-      await loadPublished();
+      if (!actual) setMessage(`The server did not return “${name}” after saving. Check the backend write.`);
+      else if (actual.books.length !== selected.length) setMessage(`Saved, but the server currently has ${actual.books.length} of ${selected.length} selected books in “${name}”. The collection was reloaded from the backend so you can see the real state.`);
+      else setMessage(`Saved “${name}” — ${actual.books.length} books confirmed by the server.`);
     } catch (error) { setMessage(error instanceof Error ? error.message : "Couldn't save collection."); }
     finally { setBusy(false); }
   }
@@ -163,16 +114,10 @@ export default function RecommendationAdminPage() {
     if (!savedPassword || !confirm(`Remove “${item.title}” from recommendation shelves?`)) return;
     setBusy(true); setMessage("");
     try {
-      for (const book of item.books) {
-        await api(`/api/books/${encodeURIComponent(book.id)}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json", "X-Admin-Password": savedPassword },
-          body: JSON.stringify({ tags: removeCollection(book.tags || [], item.title) }),
-        });
-      }
+      for (const book of item.books) await api(`/api/books/${encodeURIComponent(book.id)}`, { method: "PATCH", headers: { "Content-Type": "application/json", "X-Admin-Password": savedPassword }, body: JSON.stringify({ tags: removeCollection(book.tags || [], item.title) }) });
       if (editing === item.title) reset();
-      await loadPublished();
-      setMessage(`Removed “${item.title}”.`);
+      const fresh = await loadPublished();
+      setMessage(fresh.some((entry) => entry.title === item.title) ? `“${item.title}” is still present on the server after deletion.` : `Removed “${item.title}” — confirmed by the server.`);
     } catch (error) { setMessage(error instanceof Error ? error.message : "Couldn't remove collection."); }
     finally { setBusy(false); }
   }
