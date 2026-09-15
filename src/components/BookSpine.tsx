@@ -38,13 +38,15 @@ const SPINE_VARIANTS = [
   { light: "#6890A8", dark: "#203848" },
 ] as const;
 
-// If the API eventually exposes a real page count, it wins. Until then the
-// stored file size is the best available physical-thickness signal and keeps
-// small/large books visibly different without pretending it is a page count.
+// Prefer a real page count if the backend begins returning one. The current
+// API does not expose pages, so file size is used as a graceful physical-
+// thickness proxy rather than pretending the size is a page count.
 function getThickness(book: Book, seed: number) {
   const b = book as Book & { page_count?: number; pages?: number; num_pages?: number };
   const pages = Number(b.page_count ?? b.pages ?? b.num_pages ?? 0);
-  if (pages > 0) return Math.round(Math.min(48, Math.max(18, 17 + Math.sqrt(pages) * 1.55));
+  if (pages > 0) {
+    return Math.round(Math.min(48, Math.max(18, 17 + Math.sqrt(pages) * 1.55)));
+  }
   const mb = Math.max(0.05, book.size / (1024 * 1024));
   return Math.round(Math.min(48, Math.max(18, 19 + Math.log2(mb + 1) * 4.2 + (seed % 4))));
 }
@@ -77,7 +79,7 @@ export function BookSpine({ book, onOpen }: Props) {
       const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
       setTextTone((0.299 * r + 0.587 * g + 0.114 * b) > 150 ? "dark" : "light");
     } catch {
-      setTextTone((seed % 3 === 0) ? "dark" : "light");
+      setTextTone(seed % 3 === 0 ? "dark" : "light");
     }
   }
 
@@ -108,14 +110,14 @@ export function BookSpine({ book, onOpen }: Props) {
         {cover && <img src={cover} alt="" onLoad={sampleCover} onError={() => setFailed(true)} className="absolute inset-0 z-[2] h-full w-full rounded-[1px] object-cover object-center opacity-100" />}
         {!cover && <span className="book-spine-art absolute inset-0 z-[2]" style={{ background: `linear-gradient(135deg, ${variant.light} 0%, ${variant.dark} 52%, ${variant.light} 100%)` }} />}
 
-        {/* Premium lacquer/gloss streak seen on the reference books. */}
-        <span className="pointer-events-none absolute inset-y-0 left-[18%] z-[6] w-[2px] -skew-x-[12deg] bg-gradient-to-r from-transparent via-white/55 to-transparent opacity-80" />
-        <span className="pointer-events-none absolute inset-y-0 left-[24%] z-[6] w-px bg-gradient-to-b from-transparent via-white/30 to-transparent" />
+        {/* The bright lacquer streak is intentionally narrow and glossy, like the reference. */}
+        <span className="pointer-events-none absolute inset-y-0 left-[18%] z-[6] w-[2px] -skew-x-[12deg] bg-gradient-to-r from-transparent via-white/60 to-transparent opacity-90" />
+        <span className="pointer-events-none absolute inset-y-0 left-[24%] z-[6] w-px bg-gradient-to-b from-transparent via-white/32 to-transparent" />
         <span className="book-spine-cover-shade absolute inset-0 z-[3] rounded-[1px]" />
         <span className="book-spine-edge absolute inset-y-0 right-0 z-[4] w-[2px]" />
         <span className="book-spine-top absolute inset-x-0 top-0 z-[4] h-[3px]" />
 
-        <span className="book-spine-title absolute inset-y-3 left-1/2 z-[7] -translate-x-1/2 overflow-hidden whitespace-nowrap [writing-mode:vertical-rl] rotate-180 font-display text-[8px] leading-none tracking-[.045em] drop-shadow-[0_1px_1px_rgba(0,0,0,.45)]" style={{ color: ink }}>{book.title}</span>
+        <span className="book-spine-title absolute inset-y-3 left-1/2 z-[7] -translate-x-1/2 overflow-hidden whitespace-nowrap [writing-mode:vertical-rl] rotate-180 font-display text-[8px] leading-none tracking-[.045em] drop-shadow-[0_1px_1px_rgba(0,0,0,.5)]" style={{ color: ink }}>{book.title}</span>
         {book.author && <span className="absolute bottom-7 left-1/2 z-[7] -translate-x-1/2 overflow-hidden whitespace-nowrap [writing-mode:vertical-rl] rotate-180 font-mono text-[4.5px] uppercase tracking-[.09em]" style={{ color: secondaryInk }}>{book.author}</span>}
         <span className="absolute bottom-1 left-1/2 z-[7] -translate-x-1/2 font-mono text-[3.5px] uppercase tracking-[.18em]" style={{ color: secondaryInk }}>AirBooks</span>
       </span>
