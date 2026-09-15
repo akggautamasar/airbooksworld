@@ -7,11 +7,10 @@ export function Footer() {
   if (pathname?.includes("/read")) return null;
 
   return (
-    <footer className="border-t border-slate-200 py-8 mt-16 bg-white">
-      <div className="max-w-6xl mx-auto px-4 text-center text-slate-500 text-sm">
-        <p>
-          <span className="text-brand-600 font-semibold">AirBooks</span> —
-          Free ebook library powered by Telegram
+    <footer className="airbooks-footer">
+      <div className="mx-auto max-w-[1500px] px-6 text-center sm:px-10">
+        <p className="font-mono text-[8px] uppercase tracking-[.24em] text-[#8b8278]">
+          <span className="text-[#5d554c]">AirBooks</span> · Free ebook library powered by Telegram
         </p>
       </div>
     </footer>
