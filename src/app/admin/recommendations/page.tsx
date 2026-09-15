@@ -2,16 +2,161 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Check, Loader2, Plus, Save, Search, Trash2 } from "lucide-react";
-import { adminUpdateBook, fetchBooks, getCoverUrl, getStoredAdminPassword, storeAdminPassword, verifyAdminPassword, type Book } from "@/lib/api";
-import { getRecommendations, recommendationTags, withoutCollectionTags, type RecommendationCollection } from "@/lib/recommendations";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+const TITLE = "__airbooks_rec_title__:";
+const DESC = "__airbooks_rec_desc__:";
+const CURATOR = "__airbooks_rec_curator__:";
+const QUOTE = "__airbooks_rec_quote__:";
+
+function cleanTitle(tag: string) {
+  return tag.startsWith(TITLE) ? tag.slice(TITLE.length).trim() : "";
+}
+function encoded(value: string) { return encodeURIComponent(value.trim()); }
+function metadata(tags: string[], prefix: string, title: string) {
+  const marker = `${prefix}${encoded(title)}|`;
+  const tag = tags.find((item) => item.startsWith(marker));
+  return tag ? decodeURIComponent(tag.slice(marker.length)) : "";
+}
+function collectionTags(title: string, description: string, curator: string, quote: string) {
+  const name = title.trim();
+  const tags = [TITLE + name];
+  if (description.trim()) tags.push(`${DESC}${encoded(name)}|${encoded(description)}`);
+  if (curator.trim()) tags.push(`${CURATOR}${encoded(name)}|${encoded(curator)}`);
+  if (quote.trim()) tags.push(`${QUOTE}${encoded(name)}|${encoded(quote)}`);
+  return tags;
+}
+function removeCollection(tags: string[], title: string) {
+  const marker = encoded(title);
+  return tags.filter((tag) => tag !== TITLE + title && !tag.startsWith(`${DESC}${marker}|`) && !tag.startsWith(`${CURATOR}${marker}|`) && !tag.startsWith(`${QUOTE}${marker}|`));
+}
 
 export default function RecommendationAdminPage() {
-  void useEffect; void useMemo; void useState; void Link; void Check; void Loader2; void Plus; void Save; void Search; void Trash2;
-  void adminUpdateBook; void fetchBooks; void getCoverUrl; void getStoredAdminPassword; void storeAdminPassword; void verifyAdminPassword;
-  void getRecommendations; void recommendationTags; void withoutCollectionTags;
-  const _book: Book | null = null;
-  const _collection: RecommendationCollection | null = null;
-  void _book; void _collection;
-  return <main className="min-h-screen bg-[#11100f] p-10 text-white"><h1>Recommendation shelves</h1></main>;
+  const [password, setPassword] = useState("");
+  const [savedPassword, setSavedPassword] = useState<string | null>(null);
+  const [books, setBooks] = useState<any[]>([]);
+  const [query, setQuery] = useState("");
+  const [selected, setSelected] = useState<string[]>([]);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [curator, setCurator] = useState("");
+  const [quote, setQuote] = useState("");
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [loginError, setLoginError] = useState("");
+
+  useEffect(() => {
+    const value = window.sessionStorage.getItem("airbooks_admin_password");
+    if (value) setSavedPassword(value);
+  }, []);
+
+  async function api(path: string, init: RequestInit = {}) {
+    const response = await fetch(`${API_URL.replace(/\/$/, "")}${path}`, init);
+    if (!response.ok) throw new Error(response.status === 401 ? "Invalid admin password" : `Request failed (${response.status})`);
+    return response.json();
+  }
+
+  async function loadBooks() {
+    if (!savedPassword) return;
+    setBusy(true);
+    try {
+      const all: any[] = [];
+      let offset = 0;
+      while (true) {
+        const data = await api(`/api/books?limit=200&offset=${offset}`);
+        all.push(...(data.books || []));
+        offset += (data.books || []).length;
+        if ((data.books || []).length < 200 || offset >= data.total) break;
+      }
+      setBooks(all);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Couldn't load books.");
+    } finally { setBusy(false); }
+  }
+
+  useEffect(() => { if (savedPassword) loadBooks(); }, [savedPassword]);
+
+  const collections = useMemo(() => {
+    const map = new Map<string, any>();
+    for (const book of books) {
+      for (const tag of (book.tags || [])) {
+        const name = cleanTitle(tag);
+        if (!name) continue;
+        const existing = map.get(name);
+        if (existing) { existing.books.push(book); continue; }
+        map.set(name, { title: name, description: metadata(book.tags || [], DESC, name) || "Books chosen to inspire a brighter, more curious life.", curator: metadata(book.tags || [], CURATOR, name), quote: metadata(book.tags || [], QUOTE, name), books: [book] });
+      }
+    }
+    return Array.from(map.values());
+  }, [books]);
+
+  const visible = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return needle ? books.filter((book) => `${book.title} ${book.author}`.toLowerCase().includes(needle)) : books;
+  }, [books, query]);
+
+  async function login(event: React.FormEvent) {
+    event.preventDefault();
+    setLoginError("");
+    try {
+      const response = await fetch(`${API_URL.replace(/\/$/, "")}/api/books/admin/verify`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password }) });
+      if (!response.ok) return setLoginError("Incorrect password.");
+      window.sessionStorage.setItem("airbooks_admin_password", password);
+      setSavedPassword(password);
+    } catch { setLoginError("Couldn't reach the server."); }
+  }
+
+  function toggle(id: string) { setSelected((items) => items.includes(id) ? items.filter((item) => item !== id) : [...items, id]); }
+
+  function editCollection(item: any) {
+    setEditing(item.title); setTitle(item.title); setDescription(item.description); setCurator(item.curator); setQuote(item.quote); setSelected(item.books.map((book: any) => book.id)); setMessage(""); window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function reset() { setEditing(null); setTitle(""); setDescription(""); setCurator(""); setQuote(""); setSelected([]); setMessage(""); }
+
+  async function saveCollection() {
+    if (!savedPassword || !title.trim() || !selected.length) return setMessage("Enter a title and select at least one book.");
+    const name = title.trim();
+    if (!editing && collections.some((item) => item.title.toLowerCase() === name.toLowerCase())) return setMessage("That collection already exists.");
+    setBusy(true); setMessage("");
+    try {
+      const old = editing ? collections.find((item) => item.title === editing) : null;
+      const ids = Array.from(new Set([...(old?.books || []).map((book: any) => book.id), ...selected]));
+      const selectedSet = new Set(selected);
+      const tagsToAdd = collectionTags(name, description, curator, quote);
+      const byId = new Map(books.map((book) => [book.id, book]));
+      for (const id of ids) {
+        const book = byId.get(id);
+        if (!book) continue;
+        let tags = editing ? removeCollection(book.tags || [], editing) : [...(book.tags || [])];
+        if (selectedSet.has(id)) {
+          tags = removeCollection(tags, name);
+          tags = Array.from(new Set([...tags, ...tagsToAdd]));
+        }
+        const response = await api(`/api/books/${encodeURIComponent(id)}`, { method: "PATCH", headers: { "Content-Type": "application/json", "X-Admin-Password": savedPassword }, body: JSON.stringify({ tags }) });
+        byId.set(id, response.book);
+      }
+      setBooks(Array.from(byId.values())); setEditing(name); setMessage(`Saved “${name}” with ${selected.length} book${selected.length === 1 ? "" : "s"}.`);
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Couldn't save collection."); }
+    finally { setBusy(false); }
+  }
+
+  async function deleteCollection(item: any) {
+    if (!savedPassword || !confirm(`Remove “${item.title}” from recommendation shelves?`)) return;
+    setBusy(true); setMessage("");
+    try {
+      const byId = new Map(books.map((book) => [book.id, book]));
+      for (const book of item.books) {
+        const response = await api(`/api/books/${encodeURIComponent(book.id)}`, { method: "PATCH", headers: { "Content-Type": "application/json", "X-Admin-Password": savedPassword }, body: JSON.stringify({ tags: removeCollection(book.tags || [], item.title) }) });
+        byId.set(book.id, response.book);
+      }
+      setBooks(Array.from(byId.values())); if (editing === item.title) reset(); setMessage(`Removed “${item.title}”.`);
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Couldn't remove collection."); }
+    finally { setBusy(false); }
+  }
+
+  if (!savedPassword) return <main className="min-h-screen bg-[#11100f] px-5 py-20 text-white"><form onSubmit={login} className="mx-auto max-w-sm rounded-3xl border border-slate-800 bg-slate-950 p-7"><p className="font-mono text-[9px] uppercase tracking-[.3em] text-slate-500">AirBooks · Curated shelves</p><h1 className="mt-4 text-2xl font-semibold">Recommendation admin</h1><p className="mt-2 text-sm text-slate-500">Use the same password as the main admin.</p><input autoFocus type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Admin password" className="mt-5 w-full rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm" />{loginError && <p className="mt-3 text-sm text-rose-400">{loginError}</p>}<button disabled={!password} className="mt-4 w-full rounded-xl bg-white px-4 py-3 text-sm font-semibold text-black disabled:opacity-40">Enter</button></form></main>;
+
+  return <main className="min-h-screen bg-[#11100f] px-4 py-6 text-slate-100 sm:px-7"><div className="mx-auto max-w-[1450px]"><div className="flex flex-wrap items-end justify-between gap-4 border-b border-slate-800 pb-5"><div><Link href="/admin" className="text-xs text-slate-500 hover:text-white">← Book admin</Link><h1 className="mt-3 text-2xl font-semibold">Recommendation shelves</h1><p className="mt-1 text-sm text-slate-500">Create collections, choose real books, and publish the editorial shelf.</p></div><button type="button" onClick={reset} className="rounded-full border border-slate-700 px-4 py-2 text-xs"><Plus className="mr-1 inline h-3.5 w-3.5" /> New collection</button></div><div className="mt-6 grid gap-6 lg:grid-cols-[340px_1fr]"><section className="rounded-3xl border border-slate-800 bg-slate-950 p-5"><p className="font-mono text-[9px] uppercase tracking-[.25em] text-slate-500">{editing ? "Edit collection" : "New collection"}</p><input value={title} onChange={(e)=>setTitle(e.target.value)} placeholder="Collection title" className="mt-4 w-full rounded-xl border border-slate-800 bg-slate-900 px-3 py-3 text-sm"/><textarea value={description} onChange={(e)=>setDescription(e.target.value)} placeholder="Short description" rows={3} className="mt-3 w-full rounded-xl border border-slate-800 bg-slate-900 px-3 py-3 text-sm"/><input value={curator} onChange={(e)=>setCurator(e.target.value)} placeholder="Recommended by · optional" className="mt-3 w-full rounded-xl border border-slate-800 bg-slate-900 px-3 py-3 text-sm"/><textarea value={quote} onChange={(e)=>setQuote(e.target.value)} placeholder="Quote · optional" rows={3} className="mt-3 w-full rounded-xl border border-slate-800 bg-slate-900 px-3 py-3 text-sm"/><p className="mt-3 rounded-xl border border-slate-800 p-3 text-xs text-slate-500">{selected.length} selected</p><button type="button" onClick={saveCollection} disabled={busy} className="mt-3 w-full rounded-xl bg-white px-4 py-3 text-sm font-semibold text-black disabled:opacity-40">{busy ? "Saving…" : editing ? "Save changes" : "Publish collection"}</button>{message&&<p className="mt-3 text-xs leading-5 text-slate-400">{message}</p>}</section><section><div className="flex gap-2"><input value={query} onChange={(e)=>setQuery(e.target.value)} placeholder="Search books" className="w-full rounded-xl border border-slate-800 bg-slate-950 px-4 py-2.5 text-sm"/><span className="rounded-xl border border-slate-800 px-3 py-2 text-xs text-slate-500">{visible.length}</span></div><div className="mt-3 grid max-h-[600px] grid-cols-3 gap-2 overflow-auto sm:grid-cols-5 lg:grid-cols-7 xl:grid-cols-8">{visible.map((book)=><button key={book.id} type="button" onClick={()=>toggle(book.id)} className={`relative overflow-hidden rounded-2xl border text-left ${selected.includes(book.id)?"border-white bg-slate-800":"border-slate-800 bg-slate-950"}`}><div className="aspect-[3/4] bg-slate-900">{book.cover_message_id?<img src={`${API_URL.replace(/\/$/,"")}/api/books/${encodeURIComponent(book.id)}/cover?v=${encodeURIComponent(book.updated_at||"")}`} alt="" className="h-full w-full object-cover"/>:<div className="flex h-full items-end p-2 font-display text-sm text-slate-400">{book.title}</div>}</div><div className="p-2"><p className="line-clamp-2 text-[11px] leading-4">{book.title}</p><p className="mt-1 line-clamp-1 text-[9px] text-slate-600">{book.author}</p></div>{selected.includes(book.id)&&<span className="absolute right-2 top-2 rounded-full bg-white px-2 py-1 text-[9px] text-black">✓</span>}</button>)}</div></section></div><section className="mt-10 border-t border-slate-800 pt-7"><p className="font-mono text-[9px] uppercase tracking-[.25em] text-slate-500">Published collections</p><div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">{collections.map((item)=><div key={item.title} className="rounded-2xl border border-slate-800 bg-slate-950 p-4"><div className="flex items-start justify-between gap-3"><div><h2 className="font-display text-xl">{item.title}</h2><p className="mt-1 text-xs text-slate-500">{item.books.length} books{item.curator?` · ${item.curator}`:""}</p></div><div><button type="button" onClick={()=>editCollection(item)} className="mr-1 rounded-lg border border-slate-800 px-3 py-2 text-xs">Edit</button><button type="button" onClick={()=>deleteCollection(item)} disabled={busy} className="rounded-lg border border-slate-800 p-2 text-slate-400 hover:text-rose-300"><Trash2 className="h-3.5 w-3.5"/></button></div></div><p className="mt-3 text-xs leading-5 text-slate-500">{item.description}</p></div>)}{!collections.length&&<p className="rounded-2xl border border-dashed border-slate-800 p-6 text-sm text-slate-600">No collections yet.</p>}</div></section></div></main>;
 }
