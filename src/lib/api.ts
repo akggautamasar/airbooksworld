@@ -15,6 +15,10 @@ export type Book = {
   size: number;
   uploaded_at: string;
   updated_at: string;
+  /** Optional when the backend can determine the book's printed page count. */
+  page_count?: number | null;
+  /** Accept the common alternate field name without changing backend behavior. */
+  pages?: number | null;
   reader_format?: string | null;
   reader_status?: ReaderStatus;
   reader_error?: string | null;
@@ -87,9 +91,6 @@ export async function fetchBook(id: string): Promise<Book> {
   });
   if (!res.ok) {
     if (res.status === 404) throw new Error("Book not found");
-    // Don't relabel a real server error as "not found" — that hid the
-    // actual cause (a 500) behind a misleading message last time and made
-    // this much harder to diagnose than it needed to be.
     throw new Error(`Failed to load book (server returned ${res.status})`);
   }
   const data = await res.json();
@@ -111,8 +112,6 @@ export function getDownloadUrl(bookId: string) {
 
 export function getCoverUrl(bookId: string, version?: string | number) {
   const base = `${getBase()}/api/books/${bookId}/cover`;
-  // Cache-bust with the book's updated_at so a freshly uploaded/generated
-  // cover shows up immediately instead of an old cached image.
   return version ? `${base}?v=${encodeURIComponent(version)}` : base;
 }
 
@@ -255,10 +254,6 @@ export async function fetchDuplicateGroups(
   return res.json();
 }
 
-// ---------------------------------------------------------------------------
-// Bulk import from a Telegram channel
-// ---------------------------------------------------------------------------
-
 export type ImportStatus =
   | "validating"
   | "scanning"
@@ -279,9 +274,7 @@ export type ImportProgress = {
   skipped: number;
   skipped_duplicate: number;
   skipped_not_book: number;
-  /** Messages the server's Telegram client could not parse; skipped, not books. */
   skipped_unreadable?: number;
-  /** "scan-first" normally; "forward-first" when the bot cannot read the source. */
   import_method?: "scan-first" | "forward-first" | null;
   read_access?: boolean | null;
   errors: number;
@@ -315,14 +308,12 @@ function adminHeaders(password: string) {
 
 async function adminError(res: Response, fallback: string): Promise<never> {
   if (res.status === 401) throw new Error("Invalid admin password");
-  // The backend puts the actual reason in `detail` on a 400 (bad range, no
-  // channel, and so on). Showing that beats showing a bare status code.
   let detail = "";
   try {
     const body = await res.json();
     detail = body?.detail || "";
   } catch {
-    /* non-JSON error body — fall through to the generic message */
+    /* non-JSON error body */
   }
   throw new Error(detail || `${fallback} (${res.status})`);
 }
