@@ -16,7 +16,7 @@ export function Header(){
       <nav className="flex items-center gap-5 text-[#4d4842] sm:gap-7">
         <Link href="/#library-search" aria-label="Search library" title="Search" className="transition-opacity hover:opacity-55"><Search className="h-[19px] w-[19px] stroke-[1.5]"/></Link>
         <Link href="/upload" aria-label="Upload a book" title="Upload" className="transition-opacity hover:opacity-55"><Upload className="h-[19px] w-[19px] stroke-[1.5]"/></Link>
-        <Link href="/admin/recommendations" aria-label="Manage recommendations" title="Recommendations" className="transition-opacity hover:opacity-55"><Sparkles className="h-[19px] w-[19px] stroke-[1.5]"/></Link>
+        <Link href="/recommendations" aria-label="Book recommendations" title="Recommendations" className="transition-opacity hover:opacity-55"><Sparkles className="h-[19px] w-[19px] stroke-[1.5]"/></Link>
         <Link href="/admin" aria-label="Admin and settings" title="Admin / settings" className="transition-opacity hover:opacity-55"><ShieldCheck className="h-[19px] w-[19px] stroke-[1.5]"/></Link>
       </nav>
     </div>
