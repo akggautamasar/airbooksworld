@@ -7,20 +7,38 @@ import { getCoverUrl } from "@/lib/api";
 
 type Props = {
   book: Book;
-  onOpen: (book: Book, rect: { left: number; top: number; width: number; height: number }) => void;
+  onOpen: (book: Book, onRect: { left: number; top: number; width: number; height: number }) => void;
 };
+
+function hash(value: string) {
+  let n = 17;
+  for (let i = 0; i < value.length; i++) n = (n * 31 + value.charCodeAt(i)) | 0;
+  return Math.abs(n);
+}
 
 export function BookSpine({ book, onOpen }: Props) {
   const ref = useRef<HTMLButtonElement>(null);
   const [hovered, setHovered] = useState(false);
   const [failed, setFailed] = useState(false);
   const cover = book.cover_message_id && !failed ? getCoverUrl(book.id, book.updated_at) : null;
-  const width = Math.max(20, Math.min(54, 20 + (book.title.length % 35)));
-  const height = Math.max(196, Math.min(255, 208 + (book.size % 48)));
-  const rotation = ((book.id.length * 13) % 68) - 34;
-  const tilt = ((book.id.length * 7) % 9) - 4;
-  const palette = ["#6b5a4d", "#7b6a5c", "#5e6461", "#786e58", "#655f72", "#7d5b50", "#4f6263", "#85765f"];
-  const spine = palette[book.id.length % palette.length];
+  const seed = hash(book.id || book.title);
+
+  // The reference shelf is made from very slim physical spines, not cards.
+  const width = 19 + (seed % 12); // 19–30px desktop
+  const height = 178 + ((seed >> 4) % 74); // 178–251px desktop
+  const rotation = ((seed % 17) - 8) * 0.72; // restrained natural leaning
+  const depth = 2 + (seed % 5);
+  const palettes = [
+    ["#58635f", "#303b38"],
+    ["#75675c", "#433a34"],
+    ["#8b6f61", "#57453c"],
+    ["#68758a", "#414c5d"],
+    ["#8b7c68", "#594e43"],
+    ["#6f7773", "#3f4845"],
+    ["#8c6662", "#563f3c"],
+    ["#706d7d", "#474552"],
+  ] as const;
+  const [light, dark] = palettes[seed % palettes.length];
 
   function open() {
     const r = ref.current?.getBoundingClientRect();
@@ -31,7 +49,9 @@ export function BookSpine({ book, onOpen }: Props) {
     "--book-w": `${width}px`,
     "--book-h": `${height}px`,
     "--book-rotation": `${rotation}deg`,
-    "--book-tilt": `${tilt}deg`,
+    "--book-depth": `${depth}px`,
+    "--spine-light": light,
+    "--spine-dark": dark,
   } as CSSProperties;
 
   return (
@@ -48,24 +68,38 @@ export function BookSpine({ book, onOpen }: Props) {
       onClick={open}
     >
       <span
-        className="book-spine-body absolute inset-0 rounded-[2px] overflow-hidden origin-bottom shadow-[inset_-3px_0_5px_rgba(0,0,0,.25),inset_2px_0_3px_rgba(255,255,255,.18),0_8px_15px_rgba(36,31,25,.14)] transition-transform duration-700 ease-out"
+        className="book-spine-body absolute inset-0 origin-bottom overflow-hidden rounded-[1px]"
         style={{
-          background: spine,
-          transform: `perspective(1000px) rotateY(${hovered ? 0 : rotation}deg) rotateZ(${hovered ? 0 : tilt}deg) translateZ(${hovered ? 70 : 0}px) translateY(${hovered ? -22 : 0}px)`,
-          zIndex: hovered ? 40 : 1,
+          transform: `translateZ(${hovered ? 80 : 0}px) translateY(${hovered ? -18 : 0}px) rotateZ(${hovered ? 0 : rotation}deg)`,
+          zIndex: hovered ? 80 : 1,
         }}
       >
-        <span className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,.16),transparent_22%,rgba(0,0,0,.09)_78%,rgba(0,0,0,.24))]" />
+        <span className="book-spine-cover absolute inset-0" style={{ background: `linear-gradient(100deg, ${light}, ${dark})` }} />
         {cover && (
-          <img src={cover} alt="" onError={() => setFailed(true)} className="absolute inset-0 w-full h-full object-cover object-left opacity-65 mix-blend-multiply" />
+          <img
+            src={cover}
+            alt=""
+            onError={() => setFailed(true)}
+            className="absolute inset-0 h-full w-full object-cover object-left opacity-[.92] mix-blend-multiply"
+          />
         )}
-        <span className="absolute inset-y-4 left-1/2 -translate-x-1/2 whitespace-nowrap [writing-mode:vertical-rl] rotate-180 font-display text-[10px] tracking-[.06em] text-white drop-shadow-[0_1px_2px_rgba(0,0,0,.72)] overflow-hidden">
+        <span className="book-spine-edge absolute inset-y-0 right-0 w-[2px]" />
+        <span className="book-spine-top absolute inset-x-0 top-0 h-[3px]" />
+        <span className="book-spine-title absolute inset-y-3 left-1/2 -translate-x-1/2 overflow-hidden whitespace-nowrap [writing-mode:vertical-rl] rotate-180 font-display text-[8px] leading-none tracking-[.045em] text-white drop-shadow-[0_1px_2px_rgba(0,0,0,.8)]">
           {book.title}
         </span>
-        <span className="absolute bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap [writing-mode:vertical-rl] rotate-180 font-mono text-[6px] uppercase tracking-[.12em] text-white/75 overflow-hidden">
-          {book.author || "AIRBOOKS"}
-        </span>
+        {book.author && (
+          <span className="absolute bottom-2 left-1/2 -translate-x-1/2 overflow-hidden whitespace-nowrap [writing-mode:vertical-rl] rotate-180 font-mono text-[4.5px] uppercase tracking-[.09em] text-white/75">
+            {book.author}
+          </span>
+        )}
       </span>
+      {hovered && (
+        <span className="book-spine-caption pointer-events-none absolute left-1/2 top-full z-[90] mt-3 w-36 -translate-x-1/2 text-center font-mono text-[7px] uppercase leading-3 tracking-[.12em] text-[#5f574e]">
+          {book.title}
+          {book.author ? <span className="block normal-case tracking-normal text-[#8a8177]">{book.author}</span> : null}
+        </span>
+      )}
     </button>
   );
 }
