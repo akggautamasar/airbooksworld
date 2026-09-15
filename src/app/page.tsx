@@ -54,7 +54,7 @@ export default async function HomePage({ searchParams }: Props) {
           <TypedTitle />
         </div>
 
-        <p className="library-volume mt-7 font-mono text-[9px] uppercase tracking-[.38em] text-[#927f6d] sm:mt-8">
+        <p className="library-volume mt-7 font-mono text-[9px] uppercase tracking-[.38em] text-[#927f6d]">
           {total || "—"} volumes
         </p>
 
@@ -64,7 +64,7 @@ export default async function HomePage({ searchParams }: Props) {
           </Link>
         </div>
 
-        <div className="mx-auto mt-9 sm:mt-9">
+        <div id="library-search" className="mx-auto mt-9 sm:mt-9">
           <Suspense fallback={<div className="h-12" />}><SearchBar /></Suspense>
         </div>
 
