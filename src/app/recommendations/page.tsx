@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Recommendations } from "@/components/Recommendations";
-import "./reading-room.module.css";
+import styles from "./reading-room.module.css";
 
 export const metadata: Metadata = {
   title: "Book Recommendations — AirBooks",
@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function RecommendationsPage() {
   return (
-    <div className="recommendations-page grain min-h-screen bg-[#eee9e1]">
+    <div className={`${styles.readingRoom} recommendations-page grain min-h-screen bg-[#eee9e1]`}>
       <div className="recommendations-page-topbar">
         <Link href="/" className="recommendations-back">
           <ArrowLeft className="h-3.5 w-3.5" />
