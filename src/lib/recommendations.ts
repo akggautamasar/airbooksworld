@@ -13,13 +13,17 @@ export type RecommendationCollection = {
   books: Book[];
 };
 
-function valueAfter(tags: string[], prefix: string) {
-  const tag = tags.find((item) => item.startsWith(prefix));
-  return tag ? tag.slice(prefix.length).trim() : "";
+const encoded = (value: string) => encodeURIComponent(value.trim());
+
+function metadataValue(tags: string[], prefix: string, title: string) {
+  const marker = `${prefix}${encoded(title)}|`;
+  const tag = tags.find((item) => item.startsWith(marker));
+  return tag ? decodeURIComponent(tag.slice(marker.length)).trim() : "";
 }
 
 export function recommendationTitle(book: Book) {
-  return valueAfter(book.tags || [], RECOMMENDATION_PREFIX);
+  const tag = (book.tags || []).find((item) => item.startsWith(RECOMMENDATION_PREFIX));
+  return tag ? tag.slice(RECOMMENDATION_PREFIX.length).trim() : "";
 }
 
 export function isRecommendationTag(tag: string) {
@@ -37,38 +41,37 @@ export function getRecommendations(books: Book[]): RecommendationCollection[] {
   for (const book of books) {
     const title = recommendationTitle(book);
     if (!title) continue;
-
     const existing = map.get(title);
     if (existing) {
       existing.books.push(book);
       continue;
     }
-
     map.set(title, {
       title,
-      description:
-        valueAfter(book.tags || [], RECOMMENDATION_DESCRIPTION_PREFIX) ||
-        "Books chosen to inspire a brighter, more curious life.",
-      curator: valueAfter(book.tags || [], RECOMMENDATION_CURATOR_PREFIX),
-      quote: valueAfter(book.tags || [], RECOMMENDATION_QUOTE_PREFIX),
+      description: metadataValue(book.tags || [], RECOMMENDATION_DESCRIPTION_PREFIX, title) || "Books chosen to inspire a brighter, more curious life.",
+      curator: metadataValue(book.tags || [], RECOMMENDATION_CURATOR_PREFIX, title),
+      quote: metadataValue(book.tags || [], RECOMMENDATION_QUOTE_PREFIX, title),
       books: [book],
     });
   }
-
   return Array.from(map.values());
 }
 
-export function recommendationTags(input: {
-  title: string;
-  description?: string;
-  curator?: string;
-  quote?: string;
-}) {
-  const tags = [RECOMMENDATION_PREFIX + input.title.trim()];
-  if (input.description?.trim()) tags.push(RECOMMENDATION_DESCRIPTION_PREFIX + input.description.trim());
-  if (input.curator?.trim()) tags.push(RECOMMENDATION_CURATOR_PREFIX + input.curator.trim());
-  if (input.quote?.trim()) tags.push(RECOMMENDATION_QUOTE_PREFIX + input.quote.trim());
+export function recommendationTags(input: { title: string; description?: string; curator?: string; quote?: string }) {
+  const title = input.title.trim();
+  const tags = [RECOMMENDATION_PREFIX + title];
+  if (input.description?.trim()) tags.push(`${RECOMMENDATION_DESCRIPTION_PREFIX}${encoded(title)}|${encoded(input.description)}`);
+  if (input.curator?.trim()) tags.push(`${RECOMMENDATION_CURATOR_PREFIX}${encoded(title)}|${encoded(input.curator)}`);
+  if (input.quote?.trim()) tags.push(`${RECOMMENDATION_QUOTE_PREFIX}${encoded(title)}|${encoded(input.quote)}`);
   return tags;
+}
+
+export function isCollectionTag(tag: string, title: string) {
+  const encodedTitle = encoded(title);
+  return tag === RECOMMENDATION_PREFIX + title ||
+    tag.startsWith(`${RECOMMENDATION_DESCRIPTION_PREFIX}${encodedTitle}|`) ||
+    tag.startsWith(`${RECOMMENDATION_CURATOR_PREFIX}${encodedTitle}|`) ||
+    tag.startsWith(`${RECOMMENDATION_QUOTE_PREFIX}${encodedTitle}|`);
 }
 
 export function withoutRecommendationTags(tags: string[]) {
@@ -76,13 +79,5 @@ export function withoutRecommendationTags(tags: string[]) {
 }
 
 export function withoutCollectionTags(tags: string[], title: string) {
-  const titleTag = RECOMMENDATION_PREFIX + title;
-  return tags.filter((tag) => {
-    if (tag === titleTag) return false;
-    return !(
-      tag.startsWith(RECOMMENDATION_DESCRIPTION_PREFIX) ||
-      tag.startsWith(RECOMMENDATION_CURATOR_PREFIX) ||
-      tag.startsWith(RECOMMENDATION_QUOTE_PREFIX)
-    );
-  });
+  return tags.filter((tag) => !isCollectionTag(tag, title));
 }
