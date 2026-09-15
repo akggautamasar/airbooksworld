@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 export function Header(){
   const pathname=usePathname();
   if(pathname?.includes("/read")) return null;
-  return <header className="absolute inset-x-0 top-0 z-50">
+  return <header className="airbooks-header absolute inset-x-0 top-0 z-50">
     <div className="mx-auto flex h-20 max-w-[1500px] items-center justify-between px-6 sm:px-10">
       <Link href="/" className="group flex items-center gap-3 text-[#4d4842]">
         <BookOpen className="h-[21px] w-[21px] stroke-[1.5] transition-transform group-hover:-rotate-6" />
