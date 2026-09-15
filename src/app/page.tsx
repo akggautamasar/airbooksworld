@@ -50,21 +50,21 @@ export default async function HomePage({ searchParams }: Props) {
       <section className="library-hero mx-auto max-w-[1500px] px-5 text-center">
         <p className="font-mono text-[9px] uppercase tracking-[.42em] text-[#8d847a]">A personal archive</p>
 
-        <div className="mt-16 sm:mt-8">
+        <div className="mt-5 sm:mt-8">
           <TypedTitle />
         </div>
 
-        <p className="library-volume mt-[140px] font-mono text-[9px] uppercase tracking-[.38em] text-[#927f6d] sm:mt-8">
+        <p className="library-volume mt-7 font-mono text-[9px] uppercase tracking-[.38em] text-[#927f6d] sm:mt-8">
           {total || "—"} volumes
         </p>
 
-        <div className="mt-10 flex justify-center sm:mt-6">
+        <div className="mt-6 flex justify-center sm:mt-6">
           <Link href="/upload" className="rounded-full border border-[#c5bdb3] bg-[#eeeae4]/55 px-9 py-3 font-mono text-[9px] uppercase tracking-[.27em] text-[#5f574e] shadow-sm transition hover:border-[#8e8478] hover:bg-[#f7f4ef]">
             Upload a book
           </Link>
         </div>
 
-        <div className="mx-auto mt-20 sm:mt-9">
+        <div className="mx-auto mt-9 sm:mt-9">
           <Suspense fallback={<div className="h-12" />}><SearchBar /></Suspense>
         </div>
 
@@ -90,7 +90,7 @@ export default async function HomePage({ searchParams }: Props) {
           <p className="mt-2 font-sans text-sm text-[#81776c]">{error}</p>
         </div>
       ) : books.length > 0 ? (
-        <section className="library-shelf mt-14 sm:mt-6"><Shelf books={books} /></section>
+        <section className="library-shelf mt-12 sm:mt-6"><Shelf books={books} /></section>
       ) : (
         <div className="mx-auto mt-20 max-w-md text-center">
           <p className="font-display text-3xl text-[#514940]">No books match.</p>
