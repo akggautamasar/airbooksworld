@@ -21,9 +21,15 @@ function metadataValue(tags: string[], prefix: string, title: string) {
   return tag ? decodeURIComponent(tag.slice(marker.length)).trim() : "";
 }
 
+export function recommendationTitles(book: Book) {
+  return (book.tags || [])
+    .filter((tag) => tag.startsWith(RECOMMENDATION_PREFIX))
+    .map((tag) => tag.slice(RECOMMENDATION_PREFIX.length).trim())
+    .filter(Boolean);
+}
+
 export function recommendationTitle(book: Book) {
-  const tag = (book.tags || []).find((item) => item.startsWith(RECOMMENDATION_PREFIX));
-  return tag ? tag.slice(RECOMMENDATION_PREFIX.length).trim() : "";
+  return recommendationTitles(book)[0] || "";
 }
 
 export function isRecommendationTag(tag: string) {
@@ -39,20 +45,20 @@ export function getRecommendations(books: Book[]): RecommendationCollection[] {
   const map = new Map<string, RecommendationCollection>();
 
   for (const book of books) {
-    const title = recommendationTitle(book);
-    if (!title) continue;
-    const existing = map.get(title);
-    if (existing) {
-      existing.books.push(book);
-      continue;
+    for (const title of recommendationTitles(book)) {
+      const existing = map.get(title);
+      if (existing) {
+        existing.books.push(book);
+        continue;
+      }
+      map.set(title, {
+        title,
+        description: metadataValue(book.tags || [], RECOMMENDATION_DESCRIPTION_PREFIX, title) || "Books chosen to inspire a brighter, more curious life.",
+        curator: metadataValue(book.tags || [], RECOMMENDATION_CURATOR_PREFIX, title),
+        quote: metadataValue(book.tags || [], RECOMMENDATION_QUOTE_PREFIX, title),
+        books: [book],
+      });
     }
-    map.set(title, {
-      title,
-      description: metadataValue(book.tags || [], RECOMMENDATION_DESCRIPTION_PREFIX, title) || "Books chosen to inspire a brighter, more curious life.",
-      curator: metadataValue(book.tags || [], RECOMMENDATION_CURATOR_PREFIX, title),
-      quote: metadataValue(book.tags || [], RECOMMENDATION_QUOTE_PREFIX, title),
-      books: [book],
-    });
   }
   return Array.from(map.values());
 }
