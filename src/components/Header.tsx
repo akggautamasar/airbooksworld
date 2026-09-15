@@ -1,57 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen, Upload, ShieldCheck } from "lucide-react";
+import { BookOpen, ShieldCheck, Upload } from "lucide-react";
 import { usePathname } from "next/navigation";
-import clsx from "clsx";
 
-export function Header() {
-  const pathname = usePathname();
-  // Hide header chrome on immersive reader
-  if (pathname?.includes("/read")) {
-    return null;
-  }
-
-  const nav = [
-    { href: "/", label: "Library", icon: BookOpen },
-    { href: "/upload", label: "Upload", icon: Upload },
-    { href: "/admin", label: "Admin", icon: ShieldCheck },
-  ];
-
-  return (
-    <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/85 backdrop-blur-xl">
-      <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
-        <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-lg shadow-brand-500/25 group-hover:shadow-brand-500/40 transition-shadow">
-            <BookOpen className="w-5 h-5 text-white" />
-          </div>
-          <span className="text-xl font-bold tracking-tight text-slate-900">
-            Air<span className="text-brand-600">Books</span>
-          </span>
-        </Link>
-
-        <nav className="flex items-center gap-1">
-          {nav.map((item) => {
-            const active = pathname === item.href;
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={clsx(
-                  "flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-colors",
-                  active
-                    ? "bg-brand-50 text-brand-700"
-                    : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
-                )}
-              >
-                <Icon className="w-4 h-4" />
-                <span className="hidden sm:inline">{item.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
-      </div>
-    </header>
-  );
+export function Header(){
+  const pathname=usePathname();
+  if(pathname?.includes("/read")) return null;
+  return <header className="absolute inset-x-0 top-0 z-50">
+    <div className="mx-auto flex h-16 max-w-[1500px] items-center justify-between px-5 sm:px-8">
+      <Link href="/" className="group flex items-center gap-2 text-[#6f675e]">
+        <BookOpen className="h-4 w-4 transition-transform group-hover:-rotate-6" />
+        <span className="font-mono text-[9px] uppercase tracking-[.28em]">AirBooks</span>
+      </Link>
+      <nav className="flex items-center gap-1 rounded-full border border-[#bdb5ab]/50 bg-[#eeeae4]/65 p-1 backdrop-blur-md">
+        <Link href="/" title="Library" className="rounded-full px-3 py-1.5 text-[#5e564d] hover:bg-white/60"><BookOpen className="h-3.5 w-3.5"/></Link>
+        <Link href="/upload" title="Upload" className="rounded-full px-3 py-1.5 text-[#5e564d] hover:bg-white/60"><Upload className="h-3.5 w-3.5"/></Link>
+        <Link href="/admin" title="Admin / settings" className="rounded-full px-3 py-1.5 text-[#5e564d] hover:bg-white/60"><ShieldCheck className="h-3.5 w-3.5"/></Link>
+      </nav>
+    </div>
+  </header>;
 }

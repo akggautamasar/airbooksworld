@@ -2,61 +2,17 @@
 
 import { Search, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useTransition, FormEvent } from "react";
+import { FormEvent, useState, useTransition } from "react";
 
-export function SearchBar() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [query, setQuery] = useState(searchParams.get("q") || "");
-  const [isPending, startTransition] = useTransition();
-
-  function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    const params = new URLSearchParams(searchParams.toString());
-    if (query.trim()) {
-      params.set("q", query.trim());
-    } else {
-      params.delete("q");
-    }
-    params.delete("page");
-    startTransition(() => {
-      router.push(`/?${params.toString()}`);
-    });
-  }
-
-  function clear() {
-    setQuery("");
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete("q");
-    startTransition(() => {
-      router.push(`/?${params.toString()}`);
-    });
-  }
-
-  return (
-    <form onSubmit={onSubmit} className="relative w-full max-w-xl">
-      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-      <input
-        type="search"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search books by title, author, tags..."
-        className="w-full h-11 pl-11 pr-10 rounded-xl bg-white border border-slate-200 text-slate-800 placeholder:text-slate-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-400 transition-all"
-      />
-      {query && (
-        <button
-          type="button"
-          onClick={clear}
-          className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600"
-        >
-          <X className="w-4 h-4" />
-        </button>
-      )}
-      {isPending && (
-        <div className="absolute right-10 top-1/2 -translate-y-1/2">
-          <div className="w-4 h-4 border-2 border-brand-500/30 border-t-brand-500 rounded-full animate-spin" />
-        </div>
-      )}
-    </form>
-  );
+export function SearchBar(){
+  const router=useRouter(); const searchParams=useSearchParams();
+  const [query,setQuery]=useState(searchParams.get("q")||""); const [pending,startTransition]=useTransition();
+  function submit(e:FormEvent){e.preventDefault();const p=new URLSearchParams(searchParams.toString());query.trim()?p.set("q",query.trim()):p.delete("q");p.delete("page");startTransition(()=>router.push(`/?${p.toString()}`))}
+  function clear(){setQuery("");const p=new URLSearchParams(searchParams.toString());p.delete("q");p.delete("page");startTransition(()=>router.push(`/?${p.toString()}`))}
+  return <form onSubmit={submit} className="relative mx-auto w-full max-w-[760px]">
+    <Search className="pointer-events-none absolute left-1/2 top-1/2 h-4 w-4 -translate-x-[330px] -translate-y-1/2 text-[#9c9389] sm:-translate-x-[350px]"/>
+    <input aria-label="Search your library" type="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder="What are you looking for?" className="h-12 w-full border-0 border-b border-[#a79e94]/55 bg-transparent px-10 text-center font-display text-[20px] italic text-[#514941] outline-none placeholder:text-[#a49a8f] focus:border-[#6d6359]"/>
+    {query && <button type="button" onClick={clear} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-2 text-[#91877c] hover:text-[#403931]"><X className="h-4 w-4"/></button>}
+    {pending && <span className="absolute right-3 top-1/2 h-3 w-3 -translate-y-1/2 animate-spin rounded-full border border-[#9c9389] border-t-transparent"/>}
+  </form>
 }
