@@ -2,8 +2,10 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { fetchBooks, fetchTags } from "@/lib/api";
+import { isRecommendationTag } from "@/lib/recommendations";
 import { SearchBar } from "@/components/SearchBar";
 import { Shelf } from "@/components/Shelf";
+import { Recommendations } from "@/components/Recommendations";
 import { TypedTitle } from "@/components/TypedTitle";
 
 type Props = { searchParams: { q?: string; tag?: string; author?: string; page?: string } };
@@ -28,7 +30,7 @@ export default async function HomePage({ searchParams }: Props) {
     ]);
     books = booksRes.books;
     total = booksRes.total;
-    tags = tagsRes;
+    tags = tagsRes.filter((item) => !isRecommendationTag(item));
   } catch (e: any) {
     error = e?.message || "Failed to load books. Is the backend running?";
   }
@@ -105,6 +107,8 @@ export default async function HomePage({ searchParams }: Props) {
           <Link href={pageHref(Math.min(totalPages, page + 1))} aria-disabled={page >= totalPages} className={`rounded-full border p-3 ${page >= totalPages ? "pointer-events-none border-[#ddd7cf] text-[#c8c0b7]" : "border-[#c1b8ae] text-[#5f574e] hover:bg-white/50"}`}><ChevronRight className="h-4 w-4" /></Link>
         </nav>
       )}
+
+      <Recommendations />
     </div>
   );
 }
