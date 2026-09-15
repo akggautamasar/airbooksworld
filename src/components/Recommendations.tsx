@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowDownRight, ChevronRight, Loader2 } from "lucide-react";
 import { fetchBooks, fetchTags, type Book } from "@/lib/api";
 import { RECOMMENDATION_PREFIX, getRecommendations, type RecommendationCollection } from "@/lib/recommendations";
+import { loadCuratedRecommendations } from "@/lib/curated-recommendations";
 import { Shelf } from "@/components/Shelf";
 
 async function loadRecommendationBooks(): Promise<Book[]> {
@@ -19,13 +20,35 @@ async function loadRecommendationBooks(): Promise<Book[]> {
 
 export function Recommendations() {
   const [books, setBooks] = useState<Book[]>([]);
+  const [curated, setCurated] = useState<RecommendationCollection[]>([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     let cancelled = false;
-    loadRecommendationBooks().then((result) => { if (!cancelled) setBooks(result); }).catch(() => { if (!cancelled) setBooks([]); }).finally(() => { if (!cancelled) setLoading(false); });
+    Promise.all([
+      loadRecommendationBooks().catch(() => [] as Book[]),
+      loadCuratedRecommendations().catch(() => [] as RecommendationCollection[]),
+    ]).then(([result, presets]) => {
+      if (cancelled) return;
+      setBooks(result);
+      setCurated(presets);
+    }).finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, []);
-  const collections = useMemo(() => getRecommendations(books), [books]);
+  const collections = useMemo(() => {
+    const tagged = getRecommendations(books);
+    const merged = new Map<string, RecommendationCollection>();
+    for (const collection of [...curated, ...tagged]) {
+      const existing = merged.get(collection.title);
+      if (!existing) {
+        merged.set(collection.title, { ...collection, books: [...collection.books] });
+      } else {
+        const byId = new Map(existing.books.map((book) => [book.id, book]));
+        for (const book of collection.books) byId.set(book.id, book);
+        merged.set(collection.title, { ...existing, books: Array.from(byId.values()) });
+      }
+    }
+    return Array.from(merged.values());
+  }, [books, curated]);
 
   if (loading) return <section className="recommendations-section" aria-label="Book recommendations"><RecommendationHeader /><div className="recommendations-loading"><Loader2 className="h-4 w-4 animate-spin" /><span>Opening the curated shelves…</span></div><RecommendationStyles /></section>;
 
