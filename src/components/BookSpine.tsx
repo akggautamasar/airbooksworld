@@ -21,14 +21,14 @@ const SPINE_VARIANTS: SpineVariant[] = [
 function hash(value:string){let n=17;for(let i=0;i<value.length;i++)n=(n*31+value.charCodeAt(i))|0;return Math.abs(n)}
 function physicalSize(book:Book,seed:number){const pages=book.page_count??book.pages??null;if(typeof pages==="number"&&pages>0)return{width:Math.round(Math.max(20,Math.min(58,pages*.055+((seed%9)-4)*.7))),height:pages>420?252:pages<260?228:242};return{width:26+(seed%27),height:228+((seed>>4)%27)}}
 function readable(hex:string){const v=hex.replace("#","");const r=parseInt(v.slice(0,2),16),g=parseInt(v.slice(2,4),16),b=parseInt(v.slice(4,6),16);return(.2126*r+.7152*g+.0722*b)/255>.62?"#241f19":"#faf7ef"}
-function rich(hex:string){const v=hex.replace("#","");const r=parseInt(v.slice(0,2),16)/255,g=parseInt(v.slice(2,4),16)/255,b=parseInt(v.slice(4,6),16)/255;const max=Math.max(r,g,b),min=Math.min(r,g,b),l=(max+min)/2,d=max-min;let h=0,s=0;if(d){s=d/(1-Math.abs(2*l-1));if(max===r)h=60*(((g-b)/d)%6);else if(max===g)h=60*((b-g)/d+2);else h=60*((r-g)/d+4);if(h<0)h+=360}return`hsl(${Math.round(h)} ${Math.round(Math.max(52,Math.min(82,s*125)))}% ${Math.round(Math.max(25,Math.min(68,l*100)))}%)`}
+function rich(hex:string){const v=hex.replace("#","");const r=parseInt(v.slice(0,2),16)/255,g=parseInt(v.slice(2,4),16)/255,b=parseInt(v.slice(4,6),16)/255;const max=Math.max(r,g,b),min=Math.min(r,g,b),l=(max+min)/2,d=max-min;let h=0,s=0;if(d){s=d/(1-Math.abs(2*l-1));if(max===r)h=60*(((g-b)/d)%6);else if(max===g)h=60*((b-r)/d+2);else h=60*((r-g)/d+4);if(h<0)h+=360}return`hsl(${Math.round(h)} ${Math.round(Math.max(52,Math.min(82,s*125)))}% ${Math.round(Math.max(25,Math.min(68,l*100)))}%)`}
 
 export function BookSpine({book,onOpen,rotateY=0}:Props){
   const ref=useRef<HTMLButtonElement>(null);const [hovered,setHovered]=useState(false);const [failed,setFailed]=useState(false);const [coverColor,setCoverColor]=useState<string|null>(null);const [coverInk,setCoverInk]=useState<string|null>(null);
   const cover=book.cover_message_id&&!failed?getCoverUrl(book.id,book.updated_at):null;const seed=hash(book.id||book.title);const variant=SPINE_VARIANTS[seed%SPINE_VARIANTS.length];const {width,height}=physicalSize(book,seed);const ink=coverInk||variant.ink;const spine=coverColor||variant.mid;
   function sample(e:SyntheticEvent<HTMLImageElement>){try{const img=e.currentTarget,c=document.createElement("canvas");c.width=c.height=24;const ctx=c.getContext("2d");if(!ctx)return;ctx.drawImage(img,0,0,24,24);const p=ctx.getImageData(0,0,24,24).data;let r=0,g=0,b=0,n=0;for(let i=0;i<p.length;i+=4){if(p[i+3]<140)continue;const mx=Math.max(p[i],p[i+1],p[i+2]),mn=Math.min(p[i],p[i+1],p[i+2]);if(mx>238&&mx-mn<12)continue;r+=p[i];g+=p[i+1];b+=p[i+2];n++}if(n){const hex="#"+[r,g,b].map(x=>Math.round(x/n).toString(16).padStart(2,"0")).join("");setCoverColor(rich(hex));setCoverInk(readable(hex))}}catch{}}
   function open(){const r=ref.current?.getBoundingClientRect();if(r)onOpen(book,{left:r.left,top:r.top,width:r.width,height:r.height})}
-  const style={"--book-w":`${width}px`,"--book-h":`${height}px`,"--book-depth":"5px","--book-rotation":"0deg"} as CSSProperties;
+  const style={"--book-w":`${width}px`,`--book-h`:`${height}px`,`--book-depth":"5px","--book-rotation":"0deg"} as CSSProperties;
   const titleSize=width>=44?10.5:width>=32?9.5:8;
   const lift=hovered?-26:0;
   const pull=hovered?96:0;
