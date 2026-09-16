@@ -134,8 +134,8 @@ export function BookExperience({ book, ext, canRead, previousId: initialPrevious
           </div>
           <div className="mt-8 flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <button type="button" onClick={() => navigate("previous", previousId)} disabled={navLoading || previousId === null} className={navButton} aria-label="Previous book"><ArrowLeft className="h-4 w-4" /> Previous</button>
-              <button type="button" onClick={() => navigate("next", nextId)} disabled={navLoading || nextId === null} className={navButton} aria-label="Next book">Next <ArrowRight className="h-4 w-4" /></button>
+              <button type="button" onClick={() => navigate("previous", previousId)} disabled={navLoading} className={navButton} aria-label="Previous book"><ArrowLeft className="h-4 w-4" /> Previous</button>
+              <button type="button" onClick={() => navigate("next", nextId)} disabled={navLoading} className={navButton} aria-label="Next book">Next <ArrowRight className="h-4 w-4" /></button>
             </div>
             <button type="button" onClick={shelveIt} disabled={closing} className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[.2em] text-[#8f634e] transition-all hover:-translate-y-0.5 disabled:opacity-50"><Bookmark className="h-4 w-4" /> {returning ? "Shelving…" : "Shelve it"}</button>
           </div>
