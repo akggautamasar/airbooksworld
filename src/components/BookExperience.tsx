@@ -63,14 +63,14 @@ export function BookExperience({ book, ext, canRead, previousId, nextId }: Props
         </section>
         <div className="book-experience-actions mt-10 border-t border-[#d9d2c7] pt-7">
           <div className="flex flex-wrap items-center gap-3">
-            {canRead && <Link href={`/book/${book.id}/read`} className="experience-primary inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#8f634e] px-6 py-3 font-mono text-[10px] uppercase tracking-[.18em] text-[#fffaf2] shadow-[0_10px_24px_rgba(93,66,51,.16)] transition-all hover:-translate-y-0.5 hover:bg-[#7d5542]"><BookOpen className="h-4 w-4" /> Read</Link>}
+            {canRead && <a href={`/book/${book.id}/read`} className="experience-primary inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#8f634e] px-6 py-3 font-mono text-[10px] uppercase tracking-[.18em] text-[#fffaf2] shadow-[0_10px_24px_rgba(93,66,51,.16)] transition-all hover:-translate-y-0.5 hover:bg-[#7d5542]"><BookOpen className="h-4 w-4" /> Read</a>}
             <a href={getDownloadUrl(book.id)} download className="experience-secondary inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#cfc6ba] bg-[#F5F2EB] px-6 py-3 font-mono text-[10px] uppercase tracking-[.18em] text-[#5d554c] transition-colors hover:bg-white"><Download className="h-4 w-4" /> Download</a>
             {ext === "PDF" && <a href={getDownloadUrl(book.id)} target="_blank" rel="noopener noreferrer" className="experience-secondary inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#cfc6ba] bg-[#F5F2EB] px-6 py-3 font-mono text-[10px] uppercase tracking-[.18em] text-[#5d554c] transition-colors hover:bg-white"><ExternalLink className="h-4 w-4" /> Open PDF</a>}
           </div>
           <div className="mt-8 flex items-center justify-between gap-4 font-mono text-[10px] uppercase tracking-[.2em] text-[#6f665c]">
             <div className="flex items-center gap-5">
               {previousId ? <Link href={`/book/${previousId}`} onClick={() => setOriginFor(previousId)} className="inline-flex items-center gap-2 transition-colors hover:text-[#9a6c55]"><ArrowLeft className="h-4 w-4" /> Previous</Link> : <span className="opacity-30">Previous</span>}
-              {nextId ? <Link href={`/book/${nextId}`} onClick={() => setOriginFor(nextId)} className="inline-flex items-center gap-2 transition-colors hover:text-[#9a6c55]">Next <ArrowRight className="h-4 w-4" /></Link> : <span className="opacity-30">Next</span>}
+              {nextId ? <Link href={`/book/${nextId}`} onClick={() => setOriginFor(nextId)} className="inline-flex items-center gap-2 transition-colors hover:text-[#9a6c55]">Next <ArrowRight className="h-4 w-4" /> Next</Link> : <span className="opacity-30">Next</span>}
             </div>
             <button type="button" onClick={shelveIt} disabled={closing} className="inline-flex items-center gap-2 text-[#8f634e] transition-all hover:-translate-y-0.5 disabled:opacity-50"><Bookmark className="h-4 w-4" /> {returning ? "Shelving…" : "Shelve it"}</button>
           </div>
