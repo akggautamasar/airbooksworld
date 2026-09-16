@@ -72,7 +72,8 @@ export function Shelf({ books, onReachEnd, loadingMore = false }: Props) {
   }
 
   return <>
-    <div className="relative mx-auto my-6 w-full max-w-6xl px-2 sm:px-4">
+    <style>{`\n      @media (max-width: 640px) {\n        .carollia-mobile-shelf .shelf-row {\n          height: 286px !important;\n          min-height: 286px !important;\n          align-items: flex-end;\n        }\n        .carollia-mobile-shelf .book-spine-hit {\n          width: clamp(22px, calc(var(--book-w) * .76), 40px) !important;\n          height: clamp(210px, var(--book-h), 258px) !important;\n        }\n        .carollia-mobile-shelf .carollia-front-cover {\n          width: clamp(72px, 24vw, 108px) !important;\n        }\n        .carollia-mobile-shelf .shelf-rail {\n          padding-bottom: 10px !important;\n          perspective: 760px;\n        }\n      }\n    `}</style>
+    <div className="carollia-mobile-shelf relative mx-auto my-6 w-full max-w-6xl px-2 sm:px-4">
       <div className="shelf-stage-3d shelf-edge-mask w-full overflow-hidden">
         <div ref={rail} className={`shelf-rail carollia-rail no-scrollbar flex cursor-grab items-end overflow-x-auto select-none ${drag ? "cursor-grabbing" : ""}`} onWheel={wheel} onScroll={e => { handleScroll(e.currentTarget); }}
           onPointerDown={e => { if (e.button !== 0) return; setDrag({x:e.clientX,scroll:e.currentTarget.scrollLeft}); e.currentTarget.setPointerCapture(e.pointerId); }}
