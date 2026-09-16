@@ -58,3 +58,6 @@
  .book-experience-inner{padding-top:90px!important}
  .book-experience-info{margin-top:55px!important}
 }
+
+body.airbooks-book-experience .airbooks-header,body.airbooks-book-experience .airbooks-footer{display:none!important}
+body.airbooks-book-experience>main{margin:0!important;padding:0!important}
