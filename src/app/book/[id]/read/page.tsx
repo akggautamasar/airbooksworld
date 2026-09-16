@@ -10,6 +10,7 @@ import {
   fetchReaderInfo,
   getDownloadUrl,
   getReaderFileUrl,
+  getFileExt,
   type Book,
   type ReaderInfo,
 } from "@/lib/api";
@@ -33,15 +34,20 @@ export default function ReadPage() {
 
   const [book, setBook] = useState<Book | null>(null);
   const [readerInfo, setReaderInfo] = useState<ReaderInfo | null>(null);
+  const [readerError, setReaderError] = useState(false);
   const [notFound, setNotFound] = useState(false);
 
   const poll = useCallback(async () => {
     try {
       const info = await fetchReaderInfo(bookId);
       setReaderInfo(info);
+      setReaderError(false);
       return info;
     } catch {
-      setNotFound(true);
+      // PDF files do not need the server-side reader conversion endpoint.
+      // Keep the page alive so the PDF can be rendered directly from the
+      // normal download endpoint instead of incorrectly showing "not found".
+      setReaderError(true);
       return null;
     }
   }, [bookId]);
@@ -85,6 +91,10 @@ export default function ReadPage() {
     );
   }
 
+  const ext = book ? getFileExt(book.filename) : null;
+  const isPdf = ext === "PDF";
+  const downloadUrl = book ? getDownloadUrl(book.id) : null;
+
   return (
     <div className="flex flex-col h-screen bg-stone-100">
       <div className="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-stone-200 bg-white/95 backdrop-blur shadow-sm shrink-0 z-40">
@@ -110,13 +120,33 @@ export default function ReadPage() {
       </div>
 
       <div className="flex-1 min-h-0">
-        {!readerInfo && (
+        {!book && (
           <div className="h-full flex items-center justify-center gap-2 text-slate-500">
             <Loader2 className="w-5 h-5 animate-spin text-brand-500" /> Loading…
           </div>
         )}
 
-        {readerInfo?.reader_status === "converting" && (
+        {book && isPdf && (
+          <PdfReader fileUrl={downloadUrl!} />
+        )}
+
+        {book && !isPdf && readerError && !readerInfo && (
+          <div className="h-full flex flex-col items-center justify-center gap-3 text-slate-500 px-6 text-center">
+            <AlertTriangle className="w-6 h-6 text-amber-500" />
+            <p className="text-slate-700">
+              The in-browser reader could not be prepared for this file.
+            </p>
+            <a
+              href={downloadUrl!}
+              download
+              className="inline-flex items-center gap-2 mt-2 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-medium transition-colors"
+            >
+              <Download className="w-4 h-4" /> Download instead
+            </a>
+          </div>
+        )}
+
+        {readerInfo?.reader_status === "converting" && book && !isPdf && (
           <div className="h-full flex flex-col items-center justify-center gap-3 text-slate-500 px-6 text-center">
             <Loader2 className="w-6 h-6 animate-spin text-brand-500" />
             <p className="text-slate-700">
@@ -128,14 +158,14 @@ export default function ReadPage() {
           </div>
         )}
 
-        {readerInfo?.reader_status === "failed" && book && (
+        {readerInfo?.reader_status === "failed" && book && !isPdf && (
           <div className="h-full flex flex-col items-center justify-center gap-3 text-slate-500 px-6 text-center">
             <AlertTriangle className="w-6 h-6 text-amber-500" />
             <p className="text-slate-700">
               Couldn&apos;t prepare this book for the in-browser reader.
             </p>
             <a
-              href={getDownloadUrl(book.id)}
+              href={downloadUrl!}
               download
               className="inline-flex items-center gap-2 mt-2 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-medium transition-colors"
             >
@@ -144,13 +174,13 @@ export default function ReadPage() {
           </div>
         )}
 
-        {readerInfo?.reader_status === "unsupported" && book && (
+        {readerInfo?.reader_status === "unsupported" && book && !isPdf && (
           <div className="h-full flex flex-col items-center justify-center gap-3 text-slate-500 px-6 text-center">
             <p className="text-slate-700">
               This file type doesn&apos;t support in-browser reading yet.
             </p>
             <a
-              href={getDownloadUrl(book.id)}
+              href={downloadUrl!}
               download
               className="inline-flex items-center gap-2 mt-2 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-medium transition-colors"
             >
@@ -159,11 +189,8 @@ export default function ReadPage() {
           </div>
         )}
 
-        {readerInfo?.reader_status === "ready" && readerInfo.reader_url && (
+        {readerInfo?.reader_status === "ready" && readerInfo.reader_url && book && !isPdf && (
           <>
-            {readerInfo.reader_format === "pdf" && (
-              <PdfReader fileUrl={getReaderFileUrl(bookId)} />
-            )}
             {readerInfo.reader_format === "epub" && (
               <EpubReader fileUrl={getReaderFileUrl(bookId)} />
             )}
