@@ -72,7 +72,7 @@ export function Shelf({ books }:{books:Book[]}) {
         <div ref={rail} className={`shelf-rail carollia-rail no-scrollbar flex cursor-grab items-end overflow-x-auto select-none ${drag ? "cursor-grabbing" : ""}`} onWheel={wheel} onScroll={wrap}
           onPointerDown={e => { if (e.button !== 0) return; setDrag({x:e.clientX,scroll:e.currentTarget.scrollLeft}); e.currentTarget.setPointerCapture(e.pointerId); }}
           onPointerMove={move} onPointerUp={() => setDrag(null)} onPointerCancel={() => setDrag(null)} onPointerLeave={() => setDrag(null)}>
-          <div className="shelf-row carollia-rail-row">
+          <div className="shelf-row carollia-rail-row" style={{columnGap:"5px"}}>
             {items.map((book,i) => <BookSpine key={`${book.id}-${i}`} book={book} onOpen={(b,rect) => setOpen({book:b,rect})}/>)}
           </div>
           {!books.length && <div className="flex w-full items-center justify-center py-20 font-display text-lg italic text-[#756852]">No volumes found matching your query.</div>}
