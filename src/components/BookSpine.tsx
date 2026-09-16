@@ -4,7 +4,6 @@ import { useRef, useState } from "react";
 import type { CSSProperties, SyntheticEvent } from "react";
 import { getCoverUrl } from "@/lib/api";
 import type { Book } from "@/lib/api";
-import styles from "./ShelfCompact.module.css";
 
 type Props = { book: Book; onOpen: (book: Book, rect: { left:number; top:number; width:number; height:number }) => void; rotateY?: number };
 type SpineVariant = { light:string; mid:string; dark:string; ink:string };
@@ -34,7 +33,7 @@ export function BookSpine({book,onOpen,rotateY=0}:Props){
   const lift=hovered?-18:0;
   const pull=hovered?58:0;
   const lean=hovered?0:(seed%7-3)*0.35;
-  return <button ref={ref} type="button" data-book-id={book.id} aria-label={`Open ${book.title}`} className={`${styles.compactBookSpine} book-spine-hit carollia-book-hit shrink-0 self-end relative`} style={style} onMouseEnter={()=>setHovered(true)} onMouseLeave={()=>setHovered(false)} onFocus={()=>setHovered(true)} onBlur={()=>setHovered(false)} onClick={open}>
+  return <button ref={ref} type="button" data-book-id={book.id} aria-label={`Open ${book.title}`} className="book-spine-hit carollia-book-hit shrink-0 self-end relative" style={style} onMouseEnter={()=>setHovered(true)} onMouseLeave={()=>setHovered(false)} onFocus={()=>setHovered(true)} onBlur={()=>setHovered(false)} onClick={open}>
     <span className="carollia-book-body book-spine-body absolute inset-0 block" style={{transform:`translateZ(${pull + 4}px) translateY(${lift}px) rotateY(${rotateY}deg) rotateZ(${lean}deg)`,zIndex:hovered?40:1,transition:"transform 360ms cubic-bezier(.22,1,.32,1), box-shadow 360ms ease",transformStyle:"preserve-3d"}}>
       <span className="carollia-book-cover book-spine-cover relative block h-full w-full overflow-hidden rounded-[1px]" style={{background:`linear-gradient(105deg,rgba(255,255,255,.20),transparent 18%,rgba(0,0,0,.16) 84%,rgba(0,0,0,.36)),linear-gradient(90deg,${variant.light},${spine} 45%,${variant.dark})`}}>
         {cover&&<img src={cover} alt="" crossOrigin="anonymous" onLoad={sample} onError={()=>setFailed(true)} className="absolute inset-0 h-full w-full object-cover opacity-[.24] mix-blend-multiply"/>}
