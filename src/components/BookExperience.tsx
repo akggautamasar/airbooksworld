@@ -5,11 +5,10 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight, BookOpen, Bookmark, Download, ExternalLink } from "lucide-react";
 import type { Book } from "@/lib/api";
 import { BookCoverImage } from "@/components/BookCoverImage";
-import { fetchBooks, getDownloadUrl } from "@/lib/api";
+import { getDownloadUrl } from "@/lib/api";
 
 const RETURN_KEY = "airbooks_return_origin";
 const SHELF_KEY = "airbooks_shelf";
-
 type Props = { book: Book; ext: string; canRead: boolean; previousId: string | null; nextId: string | null };
 
 export function BookExperience({ book, ext, canRead, previousId: initialPreviousId, nextId: initialNextId }: Props) {
@@ -23,8 +22,7 @@ export function BookExperience({ book, ext, canRead, previousId: initialPrevious
     return () => document.body.classList.remove("airbooks-book-experience");
   }, []);
 
-  // Resolve navigation in the browser as well. This makes Previous/Next work
-  // even when the server's book-list request is paginated or cached.
+  // Use a same-origin Next.js proxy so navigation does not depend on browser CORS.
   useEffect(() => {
     let cancelled = false;
     async function resolveAdjacent() {
@@ -33,7 +31,9 @@ export function BookExperience({ book, ext, canRead, previousId: initialPrevious
         let offset = 0;
         let total = Infinity;
         while (offset < total && offset < 5000) {
-          const response = await fetchBooks({ limit: 100, offset });
+          const res = await fetch(`/api/books-navigation?limit=100&offset=${offset}`, { cache: "no-store" });
+          if (!res.ok) throw new Error("navigation request failed");
+          const response = await res.json() as { total?: number; books?: Book[] };
           const books = response.books || [];
           total = response.total || books.length;
           if (!books.length) break;
