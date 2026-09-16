@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { BookOpen, Bookmark, BookmarkCheck } from "lucide-react";
-import Link from "next/link";
 import type { Book } from "@/lib/api";
 
 const SHELF_KEY = "airbooks_shelf";
@@ -62,10 +61,14 @@ export function BookShelfActions({ book, canRead }: { book: Book; canRead: boole
   return (
     <div className="flex flex-wrap gap-3 pt-2">
       {canRead && (
-        <Link href={`/book/${book.id}/read`} onClick={clearReturnOrigin} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-medium transition-colors shadow-lg shadow-brand-600/25">
+        <a
+          href={`/book/${book.id}/read`}
+          onClick={clearReturnOrigin}
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-medium transition-colors shadow-lg shadow-brand-600/25"
+        >
           <BookOpen className="w-4 h-4" />
           Read this book
-        </Link>
+        </a>
       )}
       <button type="button" disabled={returning} onClick={toggleShelf} className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all border shadow-sm ${returning ? "border-[#c8b9a7] bg-[#f2ece4] text-[#77695a]" : shelved ? "border-brand-200 bg-brand-50 text-brand-700" : "border-slate-200 bg-white text-slate-700 hover:border-brand-200 hover:bg-brand-50"}`}>
         {shelved ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
