@@ -1,62 +1,23 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://beyondbooks.onrender.com";
 
 export type ReaderStatus = "ready" | "converting" | "failed" | "unsupported";
-
-export type Book = {
-  id: string;
-  title: string;
-  author: string;
-  description: string;
-  tags: string[];
-  language: string;
-  filename: string;
-  message_id: number;
-  cover_message_id?: number | null;
-  size: number;
-  uploaded_at: string;
-  updated_at: string;
-  page_count?: number | null;
-  pages?: number | null;
-  reader_format?: string | null;
-  reader_status?: ReaderStatus;
-  reader_error?: string | null;
-  file_hash?: string | null;
-};
-
+export type Book = { id: string; title: string; author: string; description: string; tags: string[]; language: string; filename: string; message_id: number; cover_message_id?: number | null; size: number; uploaded_at: string; updated_at: string; page_count?: number | null; pages?: number | null; reader_format?: string | null; reader_status?: ReaderStatus; reader_error?: string | null; file_hash?: string | null };
 export type ReaderInfo = { status: string; reader_status: ReaderStatus; reader_format: string | null; reader_error: string | null; reader_url: string | null };
 export type BooksResponse = { status: string; total: number; count: number; books: Book[] };
-
-function getBase() { if (!API_URL) console.warn("NEXT_PUBLIC_API_URL is not set"); return API_URL.replace(/\/$/, ""); }
+function getBase() { return API_URL.replace(/\/$/, ""); }
 const ADMIN_TOKEN_KEY = "airbooks_admin_password";
 export function getStoredAdminPassword() { if (typeof window === "undefined") return null; return window.sessionStorage.getItem(ADMIN_TOKEN_KEY); }
 export function storeAdminPassword(password: string) { if (typeof window !== "undefined") window.sessionStorage.setItem(ADMIN_TOKEN_KEY, password); }
 export function clearAdminPassword() { if (typeof window !== "undefined") window.sessionStorage.removeItem(ADMIN_TOKEN_KEY); }
-
-export async function fetchBooks(params: { q?: string; tag?: string; author?: string; limit?: number; offset?: number } = {}): Promise<BooksResponse> {
-  const sp = new URLSearchParams(); if (params.q) sp.set("q", params.q); if (params.tag) sp.set("tag", params.tag); if (params.author) sp.set("author", params.author); if (params.limit) sp.set("limit", String(params.limit)); if (params.offset) sp.set("offset", String(params.offset));
-  const res = await fetch(`${getBase()}/api/books?${sp.toString()}`, { next: { revalidate: 30 } });
-  if (!res.ok) throw new Error(`Failed to fetch books: ${res.status}`); return res.json();
-}
-
+export async function fetchBooks(params: { q?: string; tag?: string; author?: string; limit?: number; offset?: number } = {}): Promise<BooksResponse> { const sp = new URLSearchParams(); if (params.q) sp.set("q", params.q); if (params.tag) sp.set("tag", params.tag); if (params.author) sp.set("author", params.author); if (params.limit) sp.set("limit", String(params.limit)); if (params.offset) sp.set("offset", String(params.offset)); const res = await fetch(`${getBase()}/api/books?${sp.toString()}`, { next: { revalidate: 30 } }); if (!res.ok) throw new Error(`Failed to fetch books: ${res.status}`); return res.json(); }
 export async function fetchBook(id: string): Promise<Book> { const res = await fetch(`${getBase()}/api/books/${id}`, { next: { revalidate: 60 } }); if (!res.ok) { if (res.status === 404) throw new Error("Book not found"); throw new Error(`Failed to load book (server returned ${res.status})`); } const data = await res.json(); return data.book; }
-
-export async function fetchTags(): Promise<string[]> {
-  const res = await fetch(`${getBase()}/api/books/tags`, { cache: "no-store" });
-  if (!res.ok) return [];
-  const data = await res.json(); return data.tags || [];
-}
-
+export async function fetchTags(): Promise<string[]> { const res = await fetch(`${getBase()}/api/books/tags`, { cache: "no-store" }); if (!res.ok) return []; const data = await res.json(); return data.tags || []; }
 export function getDownloadUrl(bookId: string) { return `${getBase()}/api/books/${bookId}/download`; }
 export function getCoverUrl(bookId: string, version?: string | number) { const base = `${getBase()}/api/books/${bookId}/cover`; return version ? `${base}?v=${encodeURIComponent(version)}` : base; }
 export async function fetchReaderInfo(bookId: string): Promise<ReaderInfo> { const res = await fetch(`${getBase()}/api/books/${bookId}/reader-info`, { cache: "no-store" }); if (!res.ok) throw new Error(`Failed to fetch reader info: ${res.status}`); return res.json(); }
 export function getReaderFileUrl(bookId: string) { return `${getBase()}/api/books/${bookId}/reader-file`; }
 export async function verifyAdminPassword(password: string) { const res = await fetch(`${getBase()}/api/books/admin/verify`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password }) }); return res.ok; }
-
-export async function adminUpdateBook(bookId: string, password: string, updates: Partial<Pick<Book, "title" | "author" | "description" | "tags" | "language">>): Promise<Book> {
-  const res = await fetch(`${getBase()}/api/books/${bookId}`, { method: "PATCH", headers: { "Content-Type": "application/json", "X-Admin-Password": password }, body: JSON.stringify(updates) });
-  if (!res.ok) { if (res.status === 401) throw new Error("Invalid admin password"); throw new Error(`Failed to update book: ${res.status}`); }
-  return (await res.json()).book;
-}
+export async function adminUpdateBook(bookId: string, password: string, updates: Partial<Pick<Book, "title" | "author" | "description" | "tags" | "language">>): Promise<Book> { const res = await fetch(`${getBase()}/api/books/${bookId}`, { method: "PATCH", headers: { "Content-Type": "application/json", "X-Admin-Password": password }, body: JSON.stringify(updates) }); if (!res.ok) { if (res.status === 401) throw new Error("Invalid admin password"); throw new Error(`Failed to update book: ${res.status}`); } return (await res.json()).book; }
 export async function adminDeleteBook(bookId: string, password: string) { const res = await fetch(`${getBase()}/api/books/${bookId}`, { method: "DELETE", headers: { "X-Admin-Password": password } }); if (!res.ok) { if (res.status === 401) throw new Error("Invalid admin password"); throw new Error(`Failed to delete book: ${res.status}`); } }
 export async function adminUploadCover(bookId: string, password: string, file: File): Promise<Book> { const form = new FormData(); form.append("file", file); const res = await fetch(`${getBase()}/api/books/${bookId}/cover`, { method: "POST", headers: { "X-Admin-Password": password }, body: form }); if (!res.ok) { if (res.status === 401) throw new Error("Invalid admin password"); throw new Error(`Failed to upload cover: ${res.status}`); } return (await res.json()).book; }
 export async function adminGenerateCover(bookId: string, password: string, force = true): Promise<Book> { const res = await fetch(`${getBase()}/api/books/${bookId}/cover/generate?force=${force}`, { method: "POST", headers: { "X-Admin-Password": password } }); if (!res.ok) { if (res.status === 401) throw new Error("Invalid admin password"); throw new Error(`Failed to generate cover: ${res.status}`); } return (await res.json()).book; }
