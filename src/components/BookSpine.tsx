@@ -28,7 +28,7 @@ export function BookSpine({book,onOpen,rotateY=0}:Props){
   const cover=book.cover_message_id&&!failed?getCoverUrl(book.id,book.updated_at):null;const seed=hash(book.id||book.title);const variant=SPINE_VARIANTS[seed%SPINE_VARIANTS.length];const {width,height}=physicalSize(book,seed);const ink=coverInk||variant.ink;const spine=coverColor||variant.mid;
   function sample(e:SyntheticEvent<HTMLImageElement>){try{const img=e.currentTarget,c=document.createElement("canvas");c.width=c.height=24;const ctx=c.getContext("2d");if(!ctx)return;ctx.drawImage(img,0,0,24,24);const p=ctx.getImageData(0,0,24,24).data;let r=0,g=0,b=0,n=0;for(let i=0;i<p.length;i+=4){if(p[i+3]<140)continue;const mx=Math.max(p[i],p[i+1],p[i+2]),mn=Math.min(p[i],p[i+1],p[i+2]);if(mx>238&&mx-mn<12)continue;r+=p[i];g+=p[i+1];b+=p[i+2];n++}if(n){const hex="#"+[r,g,b].map(x=>Math.round(x/n).toString(16).padStart(2,"0")).join("");setCoverColor(rich(hex));setCoverInk(readable(hex))}}catch{}}
   function open(){const r=ref.current?.getBoundingClientRect();if(r)onOpen(book,{left:r.left,top:r.top,width:r.width,height:r.height})}
-  const style={"--book-w":`${width}px`,"--book-h":`${height}px`,`--book-depth`:"4px","--book-rotation":"0deg"} as CSSProperties;
+  const style={"--book-w":`${width}px`,"--book-h":`${height}px`,"--book-depth":"4px","--book-rotation":"0deg"} as CSSProperties;
   const titleSize=width>=34?8.5:width>=24?7.5:6.5;
   const lift=hovered?-18:0;
   const pull=hovered?58:0;
