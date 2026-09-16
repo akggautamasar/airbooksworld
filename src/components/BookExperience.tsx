@@ -5,21 +5,52 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight, BookOpen, Bookmark, Download, ExternalLink } from "lucide-react";
 import type { Book } from "@/lib/api";
 import { BookCoverImage } from "@/components/BookCoverImage";
-import { getDownloadUrl } from "@/lib/api";
+import { fetchBooks, getDownloadUrl } from "@/lib/api";
 
 const RETURN_KEY = "airbooks_return_origin";
 const SHELF_KEY = "airbooks_shelf";
 
 type Props = { book: Book; ext: string; canRead: boolean; previousId: string | null; nextId: string | null };
 
-export function BookExperience({ book, ext, canRead, previousId, nextId }: Props) {
+export function BookExperience({ book, ext, canRead, previousId: initialPreviousId, nextId: initialNextId }: Props) {
   const [closing, setClosing] = useState(false);
   const [returning, setReturning] = useState(false);
+  const [previousId, setPreviousId] = useState(initialPreviousId);
+  const [nextId, setNextId] = useState(initialNextId);
 
   useEffect(() => {
     document.body.classList.add("airbooks-book-experience");
     return () => document.body.classList.remove("airbooks-book-experience");
   }, []);
+
+  // Resolve navigation in the browser as well. This makes Previous/Next work
+  // even when the server's book-list request is paginated or cached.
+  useEffect(() => {
+    let cancelled = false;
+    async function resolveAdjacent() {
+      try {
+        const all: Book[] = [];
+        let offset = 0;
+        let total = Infinity;
+        while (offset < total && offset < 5000) {
+          const response = await fetchBooks({ limit: 100, offset });
+          const books = response.books || [];
+          total = response.total || books.length;
+          if (!books.length) break;
+          all.push(...books);
+          offset += books.length;
+          if (books.length < 100) break;
+        }
+        const index = all.findIndex((item) => item.id === book.id);
+        if (!cancelled && index >= 0) {
+          setPreviousId(index > 0 ? all[index - 1].id : null);
+          setNextId(index < all.length - 1 ? all[index + 1].id : null);
+        }
+      } catch {}
+    }
+    resolveAdjacent();
+    return () => { cancelled = true; };
+  }, [book.id]);
 
   function setOriginFor(bookId: string) {
     try {
