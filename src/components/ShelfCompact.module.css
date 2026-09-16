@@ -1,0 +1,48 @@
+.compactBookSpine {}
+
+/* Compact Carollia-style shelf: keep the entire bookshelf visible without losing the 3D depth. */
+:global(html body .carollia-mobile-shelf .shelf-row) {
+  height: 250px !important;
+  min-height: 250px !important;
+  align-items: flex-end !important;
+}
+
+:global(html body .carollia-mobile-shelf .book-spine-hit) {
+  width: clamp(18px, var(--book-w), 42px) !important;
+  height: clamp(165px, var(--book-h), 218px) !important;
+}
+
+:global(html body .carollia-mobile-shelf .carollia-front-cover) {
+  width: 30px !important;
+}
+
+:global(html body .carollia-mobile-shelf .shelf-rail) {
+  padding: 18px 22px 5px !important;
+}
+
+@media (max-width: 640px) {
+  :global(html body .carollia-mobile-shelf .shelf-row) {
+    height: 230px !important;
+    min-height: 230px !important;
+  }
+
+  :global(html body .carollia-mobile-shelf .book-spine-hit) {
+    width: clamp(15px, calc(var(--book-w) * .78), 30px) !important;
+    height: clamp(150px, calc(var(--book-h) * .78), 205px) !important;
+  }
+
+  :global(html body .carollia-mobile-shelf .carollia-front-cover) {
+    width: 22px !important;
+  }
+
+  :global(html body .carollia-mobile-shelf .shelf-rail) {
+    padding: 14px 12px 4px !important;
+    perspective: 820px !important;
+  }
+}
+
+@media (min-width: 641px) {
+  :global(html body .carollia-mobile-shelf .carollia-front-cover) {
+    width: 30px !important;
+  }
+}
