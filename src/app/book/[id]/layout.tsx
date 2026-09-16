@@ -1,7 +1,8 @@
-type Props = {
-  children: React.ReactNode;
-};
+import { redirect } from "next/navigation";
 
-export default function BookRouteLayout({ children }: Props) {
+type Props = { children: React.ReactNode; params: { id: string } };
+
+export default function BookRouteLayout({ children, params }: Props) {
+  redirect(`/volume/${params.id}`);
   return children;
 }
