@@ -138,18 +138,19 @@ function PhysicalBookPullout({book,rect,onCancel,onOpenDetails}:{book:Book;rect:
   const isMobile = vpW < 768;
   const targetH = isMobile ? Math.min(vpH * .40,320) : Math.min(vpH * .52,440);
   const scale = targetH / Math.max(1,rect.height);
-  const currentX = rect.left + rect.width / 2;
+  const coverW = 178 * scale;
+  const targetLeft = (vpW - coverW) / 2;
   const currentY = rect.top + rect.height / 2;
-  const deltaX = vpW / 2 - currentX;
+  const deltaX = targetLeft - rect.left;
   const deltaY = (isMobile ? vpH * .32 : vpH * .40) - currentY;
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => setPulled(true));
-    const timer = window.setTimeout(onOpenDetails,950);
+    const timer = window.setTimeout(onOpenDetails,1100);
     return () => { cancelAnimationFrame(frame); window.clearTimeout(timer); };
   },[]);
 
-  function cancel() { if (closing) return; setClosing(true); window.setTimeout(onCancel,700); }
+  function cancel() { if (closing) return; setClosing(true); window.setTimeout(onCancel,800); }
   const transform = closing ? "translate3d(0,0,0) scale(1) rotateY(0deg)" : pulled ? `translate3d(${deltaX}px,${deltaY}px,260px) scale(${scale}) rotateY(-90deg)` : "translate3d(0,0,0) scale(1) rotateY(0deg)";
 
   return <div className="fixed inset-0 z-[300] pointer-events-auto" onClick={cancel}>
@@ -176,9 +177,10 @@ function PhysicalBookReshelve({book,origin,onDone}:{book:Book;origin:ReturnOrigi
   const target = origin.rect;
   const targetH = isMobile ? Math.min(vpH*.40,320) : Math.min(vpH*.52,440);
   const scale = targetH / Math.max(1,target.height);
-  const targetCenterX = target.left + target.width/2;
+  const coverW = 178 * scale;
+  const targetLeft = (vpW - coverW) / 2;
   const targetCenterY = target.top + target.height/2;
-  const deltaX = vpW/2 - targetCenterX;
+  const deltaX = targetLeft - target.left;
   const deltaY = (isMobile ? vpH*.32 : vpH*.40) - targetCenterY;
 
   useEffect(() => {
