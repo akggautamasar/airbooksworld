@@ -70,7 +70,7 @@ export function BookExperience({ book, ext, canRead, previousId, nextId }: Props
           <div className="mt-8 flex items-center justify-between gap-4 font-mono text-[10px] uppercase tracking-[.2em] text-[#6f665c]">
             <div className="flex items-center gap-5">
               {previousId ? <Link href={`/book/${previousId}`} onClick={() => setOriginFor(previousId)} className="inline-flex items-center gap-2 transition-colors hover:text-[#9a6c55]"><ArrowLeft className="h-4 w-4" /> Previous</Link> : <span className="opacity-30">Previous</span>}
-              {nextId ? <Link href={`/book/${nextId}`} onClick={() => setOriginFor(nextId)} className="inline-flex items-center gap-2 transition-colors hover:text-[#9a6c55]">Next <ArrowRight className="h-4 w-4" /> Next</Link> : <span className="opacity-30">Next</span>}
+              {nextId ? <Link href={`/book/${nextId}`} onClick={() => setOriginFor(nextId)} className="inline-flex items-center gap-2 transition-colors hover:text-[#9a6c55]">Next <ArrowRight className="h-4 w-4" /></Link> : <span className="opacity-30">Next</span>}
             </div>
             <button type="button" onClick={shelveIt} disabled={closing} className="inline-flex items-center gap-2 text-[#8f634e] transition-all hover:-translate-y-0.5 disabled:opacity-50"><Bookmark className="h-4 w-4" /> {returning ? "Shelving…" : "Shelve it"}</button>
           </div>
