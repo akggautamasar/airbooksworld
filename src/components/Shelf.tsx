@@ -19,14 +19,18 @@ export function Shelf({ books, onReachEnd, loadingMore = false }: Props) {
   const [drag,setDrag] = useState<{x:number;scroll:number}|null>(null);
 
   const computeRotation = useCallback((index:number) => {
-    if (!rail.current) return 0;
-    const container = rail.current;
-    const center = container.clientWidth / 2;
-    const spineCenter = index * 42 - container.scrollLeft;
-    const dist = (spineCenter - center) / Math.max(1,center);
-    const clamped = Math.max(-1,Math.min(1,dist));
-    const eased = Math.sign(clamped) * Math.pow(Math.abs(clamped),1.35);
-    return Math.round(eased * 34);
+    const el = rail.current;
+    if (!el) return 0;
+    const nodes = el.querySelectorAll<HTMLElement>(".carollia-book-hit");
+    const node = nodes[index];
+    if (!node) return 0;
+    const railRect = el.getBoundingClientRect();
+    const bookRect = node.getBoundingClientRect();
+    const center = railRect.left + railRect.width / 2;
+    const bookCenter = bookRect.left + bookRect.width / 2;
+    const distance = Math.max(-1, Math.min(1, (bookCenter - center) / Math.max(1, railRect.width / 2)));
+    const eased = Math.sign(distance) * Math.pow(Math.abs(distance), 1.35);
+    return Math.round(-eased * 34);
   },[scrollPos]);
 
   useEffect(() => {
@@ -72,10 +76,10 @@ export function Shelf({ books, onReachEnd, loadingMore = false }: Props) {
   }
 
   return <>
-    <style>{`\n      @media (max-width: 640px) {\n        .carollia-mobile-shelf .shelf-row { height: 420px !important; min-height: 420px !important; align-items: flex-end; }\n        .carollia-mobile-shelf .carollia-rail-row { column-gap: 2px !important; }\n        .carollia-mobile-shelf .book-spine-hit { width: clamp(30px, calc(var(--book-w) * 1.38), 72px) !important; height: clamp(320px, calc(var(--book-h) * 1.52), 390px) !important; }\n        .carollia-mobile-shelf .carollia-front-cover { width: clamp(70px, 22vw, 105px) !important; }\n        .carollia-mobile-shelf .shelf-rail { padding-bottom: 10px !important; perspective: 850px; }\n      }\n    `}</style>
+    <style>{`\n      @media (max-width: 640px) {\n        .carollia-mobile-shelf .shelf-row { height: 420px !important; min-height: 420px !important; align-items: flex-end; }\n        .carollia-mobile-shelf .carollia-rail-row { column-gap: 2px !important; }\n        .carollia-mobile-shelf .book-spine-hit { width: clamp(30px, calc(var(--book-w) * 1.38), 72px) !important; height: clamp(320px, calc(var(--book-h) * 1.52), 390px) !important; }\n        .carollia-mobile-shelf .carollia-front-cover { width: clamp(70px, 22vw, 105px) !important; }\n        .carollia-mobile-shelf .shelf-rail { padding: 48px 40px 8px !important; perspective: 900px; }\n      }\n    `}</style>
     <div className="carollia-mobile-shelf relative mx-auto my-6 w-full max-w-6xl px-2 sm:px-4">
       <div className="shelf-stage-3d shelf-edge-mask w-full overflow-hidden">
-        <div ref={rail} className={`shelf-rail carollia-rail no-scrollbar flex cursor-grab items-end overflow-x-auto select-none ${drag ? "cursor-grabbing" : ""}`} onWheel={wheel} onScroll={e => handleScroll(e.currentTarget)}
+        <div ref={rail} className={`shelf-rail carollia-rail no-scrollbar flex cursor-grab items-end overflow-x-auto select-none ${drag ? "cursor-grabbing" : ""}`} style={{padding:"48px 40px 8px",gap:"0"}} onWheel={wheel} onScroll={e => handleScroll(e.currentTarget)}
           onPointerDown={e => { if (e.button !== 0) return; setDrag({x:e.clientX,scroll:e.currentTarget.scrollLeft}); e.currentTarget.setPointerCapture(e.pointerId); }}
           onPointerMove={move} onPointerUp={() => setDrag(null)} onPointerCancel={() => setDrag(null)} onPointerLeave={() => setDrag(null)}>
           <div className="shelf-row carollia-rail-row" style={{columnGap:"2px"}}>
