@@ -1,0 +1,41 @@
+/* Carollia reference visual system — ported into the existing AirBooks app without changing its data layer. */
+.carollia-paper{background-color:#F5F2EB;background-image:radial-gradient(#ded7c7 .75px,transparent .75px),radial-gradient(#ded7c7 .75px,#F5F2EB .75px);background-size:28px 28px;background-position:0 0,14px 14px;color:#241F19;overflow-x:hidden}
+.vertical-spine-text{writing-mode:vertical-rl;text-orientation:mixed;transform:rotate(180deg)}
+.spine-cylindrical-sheen{background:linear-gradient(90deg,rgba(0,0,0,.46) 0%,rgba(0,0,0,.16) 7%,rgba(255,255,255,.38) 16%,rgba(255,255,255,.08) 28%,rgba(0,0,0,.02) 50%,rgba(0,0,0,.14) 82%,rgba(0,0,0,.52) 100%)}
+.spine-crease-left,.spine-crease-right{position:absolute;top:0;bottom:0;width:1px;pointer-events:none}
+.spine-crease-left{left:3px;background:rgba(0,0,0,.35);box-shadow:1px 0 1px rgba(255,255,255,.2)}
+.spine-crease-right{right:3px;background:rgba(0,0,0,.38);box-shadow:-1px 0 1px rgba(255,255,255,.18)}
+.finish-cloth{background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.04),rgba(255,255,255,.04) 1px,transparent 1px,transparent 2px),repeating-linear-gradient(90deg,rgba(0,0,0,.05),rgba(0,0,0,.05) 1px,transparent 1px,transparent 2px)}
+.finish-matte{background-image:radial-gradient(rgba(0,0,0,.06) 1px,transparent 0);background-size:3px 3px}
+.finish-gloss{box-shadow:inset 0 0 12px rgba(255,255,255,.22)}
+.shelf-edge-mask{mask-image:linear-gradient(to right,transparent,black 48px,black calc(100% - 48px),transparent);-webkit-mask-image:linear-gradient(to right,transparent,black 48px,black calc(100% - 48px),transparent)}
+.shelf-stage-3d{perspective:1400px;perspective-origin:50% 65%;transform-style:preserve-3d}
+.carollia-shelf-nav{background:rgba(250,248,245,.86);backdrop-filter:blur(8px);border:1px solid #DCD6C9;box-shadow:0 2px 8px rgba(50,42,34,.08)}
+.carollia-rail{padding:56px 40px 8px;gap:2px;align-items:flex-end;overscroll-behavior-x:contain;touch-action:pan-x}
+.carollia-rail-row{min-height:286px;height:286px;display:flex;align-items:flex-end;width:max-content;min-width:100%;transform-style:preserve-3d}
+.carollia-book-hit{transform-origin:center bottom;perspective:900px;transform-style:preserve-3d;will-change:transform}
+.carollia-book-body{transform-style:preserve-3d;transition:transform .3s cubic-bezier(.22,1,.36,1),box-shadow .3s ease}
+.carollia-book-hit:hover .carollia-book-body,.carollia-book-hit:focus-visible .carollia-book-body{z-index:40}
+.carollia-book-cover{backface-visibility:hidden;box-shadow:inset 2px 0 3px rgba(255,255,255,.22),inset -3px 0 5px rgba(0,0,0,.28)}
+.carollia-front-cover{backface-visibility:hidden;transform-origin:left center;box-shadow:12px 16px 26px rgba(0,0,0,.3)}
+.carollia-book-shadow{transition:opacity .3s ease}
+.carollia-caption{opacity:0;transform:translate(-50%,-5px);transition:opacity .25s ease,transform .25s ease}
+.carollia-book-hit:hover .carollia-caption,.carollia-book-hit:focus-visible .carollia-caption{opacity:1;transform:translate(-50%,0)}
+.carollia-book-hit:focus-visible{outline:1px solid rgba(70,62,54,.5);outline-offset:6px}
+@keyframes shelveIn{0%{opacity:0;transform:translateY(-70px) translateZ(100px) scale(1.08) rotateZ(-10deg)}70%{transform:translateY(4px) translateZ(8px) rotateZ(1deg)}100%{opacity:1;transform:translateY(0) translateZ(0) rotateZ(0)}}
+.animate-shelve-in{animation:shelveIn 1100ms cubic-bezier(.22,1,.32,1) both}
+.carollia-hero{padding-top:32px}
+.carollia-hero h1{font-size:clamp(4rem,7vw,7rem);line-height:.9;letter-spacing:-.055em}
+.carollia-search{width:min(100%,560px)}
+.carollia-search input::placeholder{color:#ADA497}
+.carollia-volume{letter-spacing:.3em}
+@media(max-width:640px){
+ .carollia-hero{padding-top:30px;padding-left:20px;padding-right:20px}
+ .carollia-hero h1{font-size:clamp(3.55rem,15vw,5.1rem);line-height:.88}
+ .carollia-rail{padding:56px 1px 18px;perspective:850px}
+ .carollia-rail-row{height:420px;min-height:420px;justify-content:flex-start}
+ .carollia-book-hit{height:clamp(300px,calc(var(--book-h) * 1.38),405px)}
+ .carollia-book-body{height:100%!important}
+ .carollia-caption{display:none}
+ .carollia-shelf-nav{width:34px;height:34px}
+}
