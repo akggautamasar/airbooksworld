@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import type { CSSProperties, PointerEvent as ReactPointerEvent, WheelEvent as ReactWheelEvent } from "react";
+import type { PointerEvent as ReactPointerEvent, WheelEvent as ReactWheelEvent } from "react";
 import { useRouter } from "next/navigation";
 import type { Book } from "@/lib/api";
 import { getCoverUrl } from "@/lib/api";
@@ -89,11 +89,11 @@ export function Shelf({ books, onReachEnd, loadingMore = false }: Props) {
       </div>
       <div className="relative mt-[-1px] w-full px-6 pointer-events-none"><div className="h-px w-full bg-gradient-to-r from-transparent via-[#C5BDAF]/70 to-transparent"/><div className="h-8 w-full bg-gradient-to-b from-black/[0.07] via-black/[0.02] to-transparent blur-[3px]"/></div>
     </div>
-    {pullout && <PhysicalBookPullout book={pullout.book} rect={pullout.rect} onCancel={() => setPullout(null)} onOpenReader={() => router.push(`/book/${pullout.book.id}/read`)} />}
+    {pullout && <PhysicalBookPullout book={pullout.book} rect={pullout.rect} onCancel={() => setPullout(null)} onOpenDetails={() => router.push(`/book/${pullout.book.id}`)} />}
   </>;
 }
 
-function PhysicalBookPullout({book,rect,onCancel,onOpenReader}:{book:Book;rect:Rect;onCancel:()=>void;onOpenReader:()=>void}) {
+function PhysicalBookPullout({book,rect,onCancel,onOpenDetails}:{book:Book;rect:Rect;onCancel:()=>void;onOpenDetails:()=>void}) {
   const [pulled,setPulled] = useState(false);
   const [closing,setClosing] = useState(false);
   const cover = book.cover_message_id ? getCoverUrl(book.id,book.updated_at) : null;
@@ -109,9 +109,9 @@ function PhysicalBookPullout({book,rect,onCancel,onOpenReader}:{book:Book;rect:R
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => setPulled(true));
-    const timer = window.setTimeout(onOpenReader,950);
+    const timer = window.setTimeout(onOpenDetails,950);
     return () => { cancelAnimationFrame(frame); window.clearTimeout(timer); };
-  },[onOpenReader]);
+  },[]);
 
   function cancel() {
     if (closing) return;
@@ -119,11 +119,7 @@ function PhysicalBookPullout({book,rect,onCancel,onOpenReader}:{book:Book;rect:R
     window.setTimeout(onCancel,700);
   }
 
-  const transform = closing
-    ? "translate3d(0,0,0) scale(1) rotateY(0deg)"
-    : pulled
-      ? `translate3d(${deltaX}px,${deltaY}px,260px) scale(${scale}) rotateY(-90deg)`
-      : "translate3d(0,0,0) scale(1) rotateY(0deg)";
+  const transform = closing ? "translate3d(0,0,0) scale(1) rotateY(0deg)" : pulled ? `translate3d(${deltaX}px,${deltaY}px,260px) scale(${scale}) rotateY(-90deg)` : "translate3d(0,0,0) scale(1) rotateY(0deg)";
 
   return <div className="fixed inset-0 z-[300] pointer-events-auto" onClick={cancel}>
     <div className={`absolute inset-0 bg-[#FAF8F5]/85 backdrop-blur-md transition-opacity duration-700 ${pulled&&!closing?"opacity-100":"opacity-0"}`} />
@@ -133,13 +129,11 @@ function PhysicalBookPullout({book,rect,onCancel,onOpenReader}:{book:Book;rect:R
           {cover&&<img src={cover} alt="" className="absolute inset-0 h-full w-full object-cover opacity-30 mix-blend-multiply"/>}
           <span className="absolute inset-0 spine-cylindrical-sheen"/>
           <span className="absolute inset-y-4 left-1/2 -translate-x-1/2 whitespace-nowrap font-display font-semibold text-[9px] text-[#faf7ef]" style={{writingMode:"vertical-rl",transform:"translateX(-50%) rotate(180deg)"}}>{book.title}</span>
-          <span className="absolute inset-y-0 left-[3px] w-px bg-black/30"/>
-          <span className="absolute inset-y-0 right-[3px] w-px bg-black/30"/>
+          <span className="absolute inset-y-0 left-[3px] w-px bg-black/30"/><span className="absolute inset-y-0 right-[3px] w-px bg-black/30"/>
         </div>
         <div className="absolute left-full top-0 h-full overflow-hidden rounded-r-sm border border-[#d3c8b8] bg-[#f8f5ee] shadow-[0_15px_35px_rgba(0,0,0,.25)]" style={{width:178,transformOrigin:"left center",transform:"rotateY(90deg)",backfaceVisibility:"hidden"}}>
           {cover?<img src={cover} alt="" className="h-full w-full object-cover"/>:<div className="h-full w-full bg-gradient-to-br from-[#8f7863] to-[#3f3128]"/>}
-          <div className="absolute inset-y-0 left-0 w-4 bg-gradient-to-r from-black/35 via-black/10 to-transparent"/>
-          <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-white/20"/>
+          <div className="absolute inset-y-0 left-0 w-4 bg-gradient-to-r from-black/35 via-black/10 to-transparent"/><div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-white/20"/>
         </div>
       </div>
     </div>
