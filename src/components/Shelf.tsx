@@ -77,7 +77,7 @@ export function Shelf({ books, onReachEnd, loadingMore = false }: Props) {
         <div ref={rail} className={`shelf-rail carollia-rail no-scrollbar flex cursor-grab items-end overflow-x-auto select-none ${drag ? "cursor-grabbing" : ""}`} onWheel={wheel} onScroll={e => { handleScroll(e.currentTarget); }}
           onPointerDown={e => { if (e.button !== 0) return; setDrag({x:e.clientX,scroll:e.currentTarget.scrollLeft}); e.currentTarget.setPointerCapture(e.pointerId); }}
           onPointerMove={move} onPointerUp={() => setDrag(null)} onPointerCancel={() => setDrag(null)} onPointerLeave={() => setDrag(null)}>
-          <div className="shelf-row carollia-rail-row" style={{columnGap:"5px"}}>
+          <div className="shelf-row carollia-rail-row" style={{columnGap:"8px"}}>
             {books.map(book => <BookSpine key={book.id} book={book} onOpen={(b,rect) => setOpen({book:b,rect})}/>)}
             {loadingMore && <div className="flex h-[242px] w-20 shrink-0 items-center justify-center self-end"><span className="h-2 w-2 animate-pulse rounded-full bg-[#9e6b52]" /></div>}
           </div>
