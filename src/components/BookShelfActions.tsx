@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BookOpen, Bookmark, BookmarkCheck, RotateCcw } from "lucide-react";
+import { BookOpen, Bookmark, BookmarkCheck } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import type { Book } from "@/lib/api";
 
 const SHELF_KEY = "airbooks_shelf";
@@ -14,7 +13,6 @@ type ReturnOrigin = { bookId:string; rect:{left:number;top:number;width:number;h
 export function BookShelfActions({ book, canRead }: { book: Book; canRead: boolean }) {
   const [shelved, setShelved] = useState(false);
   const [returning, setReturning] = useState(false);
-  const router = useRouter();
 
   useEffect(() => {
     try {
@@ -52,7 +50,7 @@ export function BookShelfActions({ book, canRead }: { book: Book; canRead: boole
 
       if (hasOrigin) {
         setReturning(true);
-        window.setTimeout(() => router.back(), 180);
+        window.setTimeout(() => window.history.back(), 180);
       }
     } catch {}
   }
@@ -70,7 +68,7 @@ export function BookShelfActions({ book, canRead }: { book: Book; canRead: boole
         </Link>
       )}
       <button type="button" disabled={returning} onClick={toggleShelf} className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all border shadow-sm ${returning ? "border-[#c8b9a7] bg-[#f2ece4] text-[#77695a]" : shelved ? "border-brand-200 bg-brand-50 text-brand-700" : "border-slate-200 bg-white text-slate-700 hover:border-brand-200 hover:bg-brand-50"}`}>
-        {returning ? <RotateCcw className="w-4 h-4 animate-spin" /> : shelved ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
+        {shelved ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
         {returning ? "Returning to shelf…" : shelved ? "Shelved" : "Shelve this book"}
       </button>
     </div>
