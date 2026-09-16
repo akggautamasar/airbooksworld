@@ -2,25 +2,40 @@
 
 import { useEffect, useState } from "react";
 
-const FULL = "Welcome to my library";
+const WORDS = ["library", "sanctuary", "collection", "archive"];
 
 export function TypedTitle() {
-  const [text, setText] = useState("");
+  const [word, setWord] = useState(WORDS[0]);
 
   useEffect(() => {
-    let i = 0;
+    let wordIndex = 0;
+    let charIndex = WORDS[0].length;
+    let deleting = false;
+
     const timer = window.setInterval(() => {
-      i += 1;
-      setText(FULL.slice(0, i));
-      if (i >= FULL.length) window.clearInterval(timer);
-    }, 70);
+      const current = WORDS[wordIndex];
+      if (!deleting) {
+        charIndex += 1;
+        setWord(current.slice(0, charIndex));
+        if (charIndex >= current.length) deleting = true;
+      } else {
+        charIndex -= 1;
+        setWord(current.slice(0, charIndex));
+        if (charIndex <= 0) {
+          deleting = false;
+          wordIndex = (wordIndex + 1) % WORDS.length;
+        }
+      }
+    }, 180);
+
     return () => window.clearInterval(timer);
   }, []);
 
   return (
-    <h1 aria-label={FULL} className="font-display italic font-light text-[clamp(3.25rem,8vw,7rem)] leading-[0.92] tracking-[-0.045em] text-[#24211d]">
-      <span aria-hidden>{text}</span>
-      <span aria-hidden className="inline-block w-px h-[0.72em] bg-[#24211d]/60 ml-2 align-middle animate-caret" />
+    <h1 aria-label="Welcome to my library" className="font-display italic font-light text-[clamp(3.55rem,7vw,7rem)] leading-[0.9] tracking-[-0.055em] text-[#241f19]">
+      <span>Welcome to my </span>
+      <span>{word}</span>
+      <span aria-hidden className="inline-block w-[2px] h-[0.72em] bg-[#241f19] ml-1 align-[-0.08em] animate-caret" />
     </h1>
   );
 }
