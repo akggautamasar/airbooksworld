@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent, WheelEvent as ReactWheelEvent } from "react";
 import Link from "next/link";
 import { Download, X } from "lucide-react";
@@ -9,29 +9,30 @@ import { getCoverUrl, getDownloadUrl } from "@/lib/api";
 import { BookSpine } from "@/components/BookSpine";
 
 type Rect = { left:number; top:number; width:number; height:number };
-
-type Props = {
-  books: Book[];
-  onReachEnd?: () => void;
-  loadingMore?: boolean;
-};
+type Props = { books: Book[]; onReachEnd?: () => void; loadingMore?: boolean };
 
 export function Shelf({ books, onReachEnd, loadingMore = false }: Props) {
   const rail = useRef<HTMLDivElement>(null);
   const lastScrollLeft = useRef(0);
+  const [scrollPos,setScrollPos] = useState(0);
   const [open,setOpen] = useState<{book:Book;rect:Rect}|null>(null);
   const [drag,setDrag] = useState<{x:number;scroll:number}|null>(null);
+
+  const computeRotation = useCallback((index:number) => {
+    if (!rail.current) return 0;
+    const container = rail.current;
+    const center = container.clientWidth / 2;
+    const spineCenter = index * 42 - container.scrollLeft;
+    const dist = (spineCenter - center) / Math.max(1,center);
+    const clamped = Math.max(-1,Math.min(1,dist));
+    const eased = Math.sign(clamped) * Math.pow(Math.abs(clamped),1.35);
+    return Math.round(eased * 34);
+  },[scrollPos]);
 
   useEffect(() => {
     const el = rail.current;
     if (!el) return;
-
-    const closeCovers = () => {
-      el.querySelectorAll<HTMLElement>(".carollia-front-cover").forEach(node => {
-        node.style.setProperty("--cover-angle", "90deg");
-      });
-    };
-
+    const closeCovers = () => el.querySelectorAll<HTMLElement>(".carollia-front-cover").forEach(node => node.style.setProperty("--cover-angle","90deg"));
     closeCovers();
     lastScrollLeft.current = el.scrollLeft;
     return () => closeCovers();
@@ -41,21 +42,20 @@ export function Shelf({ books, onReachEnd, loadingMore = false }: Props) {
     const el = rail.current;
     if (!el) return;
     const angle = direction > 0 ? "52deg" : "90deg";
-    el.querySelectorAll<HTMLElement>(".carollia-front-cover").forEach(node => {
-      node.style.setProperty("--cover-angle", angle);
-    });
+    el.querySelectorAll<HTMLElement>(".carollia-front-cover").forEach(node => node.style.setProperty("--cover-angle",angle));
   }
 
-  function checkEnd(el: HTMLDivElement) {
+  function checkEnd(el:HTMLDivElement) {
     if (!onReachEnd || loadingMore) return;
     const remaining = el.scrollWidth - (el.scrollLeft + el.clientWidth);
-    if (remaining <= Math.max(900, el.clientWidth * 1.5)) onReachEnd();
+    if (remaining <= Math.max(900,el.clientWidth * 1.5)) onReachEnd();
   }
 
-  function handleScroll(el: HTMLDivElement) {
+  function handleScroll(el:HTMLDivElement) {
     const delta = el.scrollLeft - lastScrollLeft.current;
-    if (Math.abs(delta) > 0.5) animateCovers(delta);
+    if (Math.abs(delta) > .5) animateCovers(delta);
     lastScrollLeft.current = el.scrollLeft;
+    setScrollPos(el.scrollLeft);
     checkEnd(el);
   }
 
@@ -72,14 +72,14 @@ export function Shelf({ books, onReachEnd, loadingMore = false }: Props) {
   }
 
   return <>
-    <style>{`\n      @media (max-width: 640px) {\n        .carollia-mobile-shelf .shelf-row {\n          height: 420px !important;\n          min-height: 420px !important;\n          align-items: flex-end;\n        }\n        .carollia-mobile-shelf .carollia-rail-row {\n          column-gap: 5px !important;\n        }\n        .carollia-mobile-shelf .book-spine-hit {\n          width: clamp(30px, calc(var(--book-w) * 1.38), 72px) !important;\n          height: clamp(320px, calc(var(--book-h) * 1.52), 390px) !important;\n        }\n        .carollia-mobile-shelf .carollia-front-cover {\n          width: clamp(70px, 22vw, 105px) !important;\n        }\n        .carollia-mobile-shelf .shelf-rail {\n          padding-bottom: 10px !important;\n          perspective: 760px;\n        }\n      }\n    `}</style>
+    <style>{`\n      @media (max-width: 640px) {\n        .carollia-mobile-shelf .shelf-row { height: 420px !important; min-height: 420px !important; align-items: flex-end; }\n        .carollia-mobile-shelf .carollia-rail-row { column-gap: 2px !important; }\n        .carollia-mobile-shelf .book-spine-hit { width: clamp(30px, calc(var(--book-w) * 1.38), 72px) !important; height: clamp(320px, calc(var(--book-h) * 1.52), 390px) !important; }\n        .carollia-mobile-shelf .carollia-front-cover { width: clamp(70px, 22vw, 105px) !important; }\n        .carollia-mobile-shelf .shelf-rail { padding-bottom: 10px !important; perspective: 850px; }\n      }\n    `}</style>
     <div className="carollia-mobile-shelf relative mx-auto my-6 w-full max-w-6xl px-2 sm:px-4">
       <div className="shelf-stage-3d shelf-edge-mask w-full overflow-hidden">
-        <div ref={rail} className={`shelf-rail carollia-rail no-scrollbar flex cursor-grab items-end overflow-x-auto select-none ${drag ? "cursor-grabbing" : ""}`} onWheel={wheel} onScroll={e => { handleScroll(e.currentTarget); }}
+        <div ref={rail} className={`shelf-rail carollia-rail no-scrollbar flex cursor-grab items-end overflow-x-auto select-none ${drag ? "cursor-grabbing" : ""}`} onWheel={wheel} onScroll={e => handleScroll(e.currentTarget)}
           onPointerDown={e => { if (e.button !== 0) return; setDrag({x:e.clientX,scroll:e.currentTarget.scrollLeft}); e.currentTarget.setPointerCapture(e.pointerId); }}
           onPointerMove={move} onPointerUp={() => setDrag(null)} onPointerCancel={() => setDrag(null)} onPointerLeave={() => setDrag(null)}>
-          <div className="shelf-row carollia-rail-row" style={{columnGap:"8px"}}>
-            {books.map(book => <BookSpine key={book.id} book={book} onOpen={(b,rect) => setOpen({book:b,rect})}/>)}
+          <div className="shelf-row carollia-rail-row" style={{columnGap:"2px"}}>
+            {books.map((book,idx) => <BookSpine key={book.id} book={book} rotateY={computeRotation(idx)} onOpen={(b,rect) => setOpen({book:b,rect})}/>)}
             {loadingMore && <div className="flex h-[242px] w-20 shrink-0 items-center justify-center self-end"><span className="h-2 w-2 animate-pulse rounded-full bg-[#9e6b52]" /></div>}
           </div>
           {!books.length && <div className="flex w-full items-center justify-center py-20 font-display text-lg italic text-[#756852]">No volumes found matching your query.</div>}
