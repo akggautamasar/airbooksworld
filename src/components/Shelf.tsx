@@ -18,33 +18,33 @@ type Props = {
 
 export function Shelf({ books, onReachEnd, loadingMore = false }: Props) {
   const rail = useRef<HTMLDivElement>(null);
+  const lastScrollLeft = useRef(0);
   const [open,setOpen] = useState<{book:Book;rect:Rect}|null>(null);
   const [drag,setDrag] = useState<{x:number;scroll:number}|null>(null);
 
   useEffect(() => {
     const el = rail.current;
     if (!el) return;
-    const update = () => {
-      const rr = el.getBoundingClientRect();
-      const center = rr.left + rr.width / 2;
-      const half = Math.max(1, rr.width / 2);
-      el.querySelectorAll<HTMLElement>(".book-spine-hit").forEach(node => {
-        const r = node.getBoundingClientRect();
-        const c = r.left + r.width / 2;
-        const dist = Math.max(-1, Math.min(1, (c - center) / half));
-        const eased = Math.sign(dist) * Math.pow(Math.abs(dist), 1.35);
-        node.style.setProperty("--swivel-y", `${(-eased * 34).toFixed(2)}deg`);
-        node.style.setProperty("--swivel-z", `${((1-Math.abs(dist))*8).toFixed(1)}px`);
-        node.style.setProperty("--swivel-scale", (1 + (1-Math.abs(dist))*0.018).toFixed(3));
+
+    const closeCovers = () => {
+      el.querySelectorAll<HTMLElement>(".carollia-front-cover").forEach(node => {
+        node.style.setProperty("--cover-angle", "90deg");
       });
     };
-    let frame = 0;
-    const schedule = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(update); };
-    update();
-    el.addEventListener("scroll",schedule,{passive:true});
-    window.addEventListener("resize",schedule,{passive:true});
-    return () => { cancelAnimationFrame(frame); el.removeEventListener("scroll",schedule); window.removeEventListener("resize",schedule); };
+
+    closeCovers();
+    lastScrollLeft.current = el.scrollLeft;
+    return () => closeCovers();
   },[books.length]);
+
+  function animateCovers(direction:number) {
+    const el = rail.current;
+    if (!el) return;
+    const angle = direction > 0 ? "52deg" : "90deg";
+    el.querySelectorAll<HTMLElement>(".carollia-front-cover").forEach(node => {
+      node.style.setProperty("--cover-angle", angle);
+    });
+  }
 
   function checkEnd(el: HTMLDivElement) {
     if (!onReachEnd || loadingMore) return;
@@ -52,22 +52,29 @@ export function Shelf({ books, onReachEnd, loadingMore = false }: Props) {
     if (remaining <= Math.max(900, el.clientWidth * 1.5)) onReachEnd();
   }
 
+  function handleScroll(el: HTMLDivElement) {
+    const delta = el.scrollLeft - lastScrollLeft.current;
+    if (Math.abs(delta) > 0.5) animateCovers(delta);
+    lastScrollLeft.current = el.scrollLeft;
+    checkEnd(el);
+  }
+
   function wheel(e:ReactWheelEvent<HTMLDivElement>) {
     if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { e.preventDefault(); e.currentTarget.scrollLeft += e.deltaY; }
-    checkEnd(e.currentTarget);
+    handleScroll(e.currentTarget);
   }
 
   function move(e:ReactPointerEvent<HTMLDivElement>) {
     if (!drag) return;
     e.preventDefault();
     e.currentTarget.scrollLeft = drag.scroll - (e.clientX - drag.x) * 1.5;
-    checkEnd(e.currentTarget);
+    handleScroll(e.currentTarget);
   }
 
   return <>
     <div className="relative mx-auto my-6 w-full max-w-6xl px-2 sm:px-4">
       <div className="shelf-stage-3d shelf-edge-mask w-full overflow-hidden">
-        <div ref={rail} className={`shelf-rail carollia-rail no-scrollbar flex cursor-grab items-end overflow-x-auto select-none ${drag ? "cursor-grabbing" : ""}`} onWheel={wheel} onScroll={e => { checkEnd(e.currentTarget); }}
+        <div ref={rail} className={`shelf-rail carollia-rail no-scrollbar flex cursor-grab items-end overflow-x-auto select-none ${drag ? "cursor-grabbing" : ""}`} onWheel={wheel} onScroll={e => { handleScroll(e.currentTarget); }}
           onPointerDown={e => { if (e.button !== 0) return; setDrag({x:e.clientX,scroll:e.currentTarget.scrollLeft}); e.currentTarget.setPointerCapture(e.pointerId); }}
           onPointerMove={move} onPointerUp={() => setDrag(null)} onPointerCancel={() => setDrag(null)} onPointerLeave={() => setDrag(null)}>
           <div className="shelf-row carollia-rail-row" style={{columnGap:"5px"}}>
