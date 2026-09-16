@@ -26,6 +26,9 @@
   [class~="z-[300]"] .bottom-5>div>div:nth-child(2){font-size:15px!important;line-height:1.18!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
   [class~="z-[300]"] .bottom-5>div>div:nth-child(3){font-size:12px!important;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   [class~="z-[300]"] .bottom-5 button{min-height:38px;padding:8px 18px!important}
+
+  /* The physical opening uses a rotated page face beside the spine. Keep that face phone-sized. */
+  [class~="z-[300]"] [style*="width:178px"]{width:132px!important}
 }
 
 @media(min-width:641px){
