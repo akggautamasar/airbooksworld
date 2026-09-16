@@ -8,12 +8,12 @@
 }
 
 :global(html body .carollia-mobile-shelf .book-spine-hit) {
-  width: clamp(18px, var(--book-w), 42px) !important;
+  width: clamp(16px, var(--book-w), 38px) !important;
   height: clamp(165px, var(--book-h), 218px) !important;
 }
 
 :global(html body .carollia-mobile-shelf .carollia-front-cover) {
-  width: 30px !important;
+  width: 24px !important;
 }
 
 :global(html body .carollia-mobile-shelf .shelf-rail) {
@@ -27,22 +27,16 @@
   }
 
   :global(html body .carollia-mobile-shelf .book-spine-hit) {
-    width: clamp(15px, calc(var(--book-w) * .78), 30px) !important;
-    height: clamp(150px, calc(var(--book-h) * .78), 205px) !important;
+    width: clamp(14px, calc(var(--book-w) * .72), 26px) !important;
+    height: clamp(150px, calc(var(--book-h) * .78), 202px) !important;
   }
 
   :global(html body .carollia-mobile-shelf .carollia-front-cover) {
-    width: 22px !important;
+    width: 16px !important;
   }
 
   :global(html body .carollia-mobile-shelf .shelf-rail) {
-    padding: 14px 12px 4px !important;
+    padding: 12px 8px 4px !important;
     perspective: 820px !important;
-  }
-}
-
-@media (min-width: 641px) {
-  :global(html body .carollia-mobile-shelf .carollia-front-cover) {
-    width: 30px !important;
   }
 }
