@@ -1,0 +1,19 @@
+.coverHitBridge{display:none}
+
+@media (min-width:641px){
+  .coverHitBridge{
+    display:block;
+    position:absolute;
+    top:-18px;
+    right:calc(var(--cover-w) * -1);
+    width:var(--cover-w);
+    height:calc(100% + 36px);
+    z-index:5;
+    pointer-events:none;
+  }
+
+  .bookSpineHit:hover .coverHitBridge,
+  .bookSpineHit:focus-visible .coverHitBridge{
+    pointer-events:auto;
+  }
+}
