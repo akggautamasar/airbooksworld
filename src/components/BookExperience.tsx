@@ -106,7 +106,14 @@ export function BookExperience({ book, ext, canRead, previousId: initialPrevious
     window.setTimeout(() => {
       try {
         const raw = sessionStorage.getItem(RETURN_KEY);
-        if (raw && JSON.parse(raw)?.bookId === book.id) { window.history.back(); return; }
+        if (raw && JSON.parse(raw)?.bookId === book.id) {
+          // A reader page sits between the volume and the shelf after
+          // Read -> Back. history.back() would return to the reader again.
+          // Go directly to the library so Shelf can run the physical
+          // reshelving animation using the saved origin.
+          window.location.href = "/";
+          return;
+        }
       } catch {}
       window.location.href = "/";
     }, 650);
@@ -128,7 +135,7 @@ export function BookExperience({ book, ext, canRead, previousId: initialPrevious
         </section>
         <div className="book-experience-actions mt-10 border-t border-[#d9d2c7] pt-7">
           <div className="flex flex-wrap items-center gap-3">
-            {canRead && <a href={`/read/${book.id}`} className="experience-primary inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#8f634e] px-6 py-3 font-mono text-[10px] uppercase tracking-[.18em] text-[#fffaf2] shadow-[0_10px_24px_rgba(93,66,51,.16)] transition-all hover:-translate-y-0.5 hover:bg-[#7d5542]"><BookOpen className="h-4 w-4" /> Read</a>}
+            {canRead && <a href={`/book/${book.id}/read`} className="experience-primary inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#8f634e] px-6 py-3 font-mono text-[10px] uppercase tracking-[.18em] text-[#fffaf2] shadow-[0_10px_24px_rgba(93,66,51,.16)] transition-all hover:-translate-y-0.5 hover:bg-[#7d5542]"><BookOpen className="h-4 w-4" /> Read</a>}
             <a href={getDownloadUrl(book.id)} download className="experience-secondary inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#cfc6ba] bg-[#F5F2EB] px-6 py-3 font-mono text-[10px] uppercase tracking-[.18em] text-[#5d554c] transition-colors hover:bg-white"><Download className="h-4 w-4" /> Download</a>
             {ext === "PDF" && <a href={getDownloadUrl(book.id)} target="_blank" rel="noopener noreferrer" className="experience-secondary inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#cfc6ba] bg-[#F5F2EB] px-6 py-3 font-mono text-[10px] uppercase tracking-[.18em] text-[#5d554c] transition-colors hover:bg-white"><ExternalLink className="h-4 w-4" /> Open PDF</a>}
           </div>
