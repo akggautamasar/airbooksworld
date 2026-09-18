@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { BookOpen, Download, FileText } from "lucide-react";
 import type { Book } from "@/lib/api";
-import { formatSize, getFileExt, getDownloadUrl, getCoverUrl } from "@/lib/api";
+import { formatSize, getFileExt, getDownloadUrl, getCoverUrl, getAirPagesReadUrl } from "@/lib/api";
 
 export function BookCard({ book }: { book: Book }) {
   const ext = getFileExt(book.filename);
@@ -51,7 +51,7 @@ export function BookCard({ book }: { book: Book }) {
           <div className="flex items-center gap-1.5">
             {canRead && (
               <Link
-                href={`/book/${book.id}/read`}
+                href={getAirPagesReadUrl(book.id)}
                 className="p-1.5 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors"
                 title="Read in browser"
               >
