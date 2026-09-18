@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { BookOpen, Bookmark, BookmarkCheck } from "lucide-react";
 import type { Book } from "@/lib/api";
+import { getAirPagesReadUrl } from "@/lib/api";
 
 const SHELF_KEY = "airbooks_shelf";
 const RETURN_KEY = "airbooks_return_origin";
@@ -62,7 +63,7 @@ export function BookShelfActions({ book, canRead }: { book: Book; canRead: boole
     <div className="flex flex-wrap gap-3 pt-2">
       {canRead && (
         <a
-          href={`/book/${book.id}/read`}
+          href={getAirPagesReadUrl(book.id)}
           onClick={clearReturnOrigin}
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-medium transition-colors shadow-lg shadow-brand-600/25"
         >
