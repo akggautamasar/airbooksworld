@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>AirPages</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#030712}</style></head>
+<body><script>
+(async()=>{
+  const params=new URLSearchParams(location.search), id=params.get('id');
+  if(!id){document.body.innerHTML='<p style="color:white;padding:2rem;font:16px system-ui">Missing book id.</p>';return;}
+  try{
+    const source=await fetch('/AirPages_3D_Reader.html',{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error('Could not load AirPages');return r.text();});
+    const proxy='/api/airpages/'+encodeURIComponent(id);
+    const injected=`
+async function openUrl(url) {
+  try {
+    busy('Downloading…', 2);
+    const chunkSize=4*1024*1024, chunks=[];
+    let start=0,total=0,filename='document',contentDisposition='';
+    while(true){
+      const end=start+chunkSize-1;
+      const r=await fetch(url,{headers:{Range:'bytes='+start+'-'+end},cache:'no-store'});
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      const cr=r.headers.get('Content-Range'), cd=r.headers.get('Content-Disposition')||'';
+      const m=cr&&cr.match(/bytes (\\d+)-(\\d+)\\/(\\d+)/);
+      if(m) total=Number(m[3]);
+      contentDisposition=cd;
+      const bytes=new Uint8Array(await r.arrayBuffer());
+      chunks.push(bytes); start+=bytes.byteLength;
+      if(!m||r.status===200) total=bytes.byteLength;
+      busy('Downloading…',Math.min(94,Math.round((start/total)*94)+2));
+      if(start>=total||bytes.byteLength===0) break;
+      if(!m&&r.status===200) break;
+    }
+    const all=new Uint8Array(start); let off=0;
+    for(const c of chunks){all.set(c,off);off+=c.length;}
+    const nm=contentDisposition.match(/filename="?([^";]+)"?/i);
+    if(nm) filename=nm[1];
+    else filename=decodeURIComponent(url.split('?')[0].split('/').pop()||'document');
+    await openBuffer(all,filename,{url});
+  }catch(err){
+    busyOff(); console.error(err); showToast('Could not open this book: '+(err&&err.message?err.message:'download failed'));
+  }
+}
+`;
+    const patched=source.replace('async function openUrl(url) {',injected);
+    window.__airPagesBookProxy=proxy;
+    document.open();document.write(patched);document.close();
+  }catch(err){document.body.innerHTML='<p style="color:white;padding:2rem;font:16px system-ui">AirPages could not start.</p>';console.error(err);}
+})();
+</script></body></html>
