@@ -24,25 +24,29 @@ async function openUrl(url) {
       const bytes=new Uint8Array(await r.arrayBuffer());
       chunks.push(bytes); start+=bytes.byteLength;
       if(!m||r.status===200) total=bytes.byteLength;
-      busy('Downloading…',Math.min(94,Math.round((start/total)*94)+2));
+      busy('Downloading…',Math.min(94,Math.round((start/Math.max(total,1))*94)+2));
       if(start>=total||bytes.byteLength===0) break;
       if(!m&&r.status===200) break;
     }
+    if(!start) throw new Error('Empty book response');
     const all=new Uint8Array(start); let off=0;
     for(const c of chunks){all.set(c,off);off+=c.length;}
     const nm=contentDisposition.match(/filename="?([^";]+)"?/i);
     if(nm) filename=nm[1];
-    else filename=decodeURIComponent(url.split('?')[0].split('/').pop()||'document');
+    else filename='document';
     await openBuffer(all,filename,{url});
   }catch(err){
     busyOff(); console.error(err); showToast('Could not open this book: '+(err&&err.message?err.message:'download failed'));
   }
 }
 `;
-    let patched=source.replace('async function openUrl(url) {',injected);
-    patched=patched.replace("const qs = new URLSearchParams(location.search), src = qs.get('src') || qs.get('url') || qs.get('file');", "const qs = new URLSearchParams(location.search), src = " + JSON.stringify(proxy) + " || qs.get('src') || qs.get('url') || qs.get('file');");
-    window.__airPagesBookProxy=proxy;
+    const fnPattern=/async function openUrl\(url\) \{[\\s\\S]*?\n\}\n\n(?=async function loadPdf)/;
+    if(!fnPattern.test(source)) throw new Error('AirPages openUrl function was not found');
+    let patched=source.replace(fnPattern,injected+'\n\n');
+    const startupPattern=/const qs = new URLSearchParams\(location\.search\), src = qs\.get\('src'\) \|\| qs\.get\('url'\) \|\| qs\.get\('file'\);/;
+    if(!startupPattern.test(patched)) throw new Error('AirPages startup query was not found');
+    patched=patched.replace(startupPattern,'const qs = new URLSearchParams(location.search), src = '+JSON.stringify(proxy)+';');
     document.open();document.write(patched);document.close();
-  }catch(err){document.body.innerHTML='<p style="color:white;padding:2rem;font:16px system-ui">AirPages could not start.</p>';console.error(err);}
+  }catch(err){document.body.innerHTML='<p style="color:white;padding:2rem;font:16px system-ui">AirPages could not start: '+String(err.message||err)+'</p>';console.error(err);}
 })();
 </script></body></html>
