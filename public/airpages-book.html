@@ -22,30 +22,31 @@ async function openUrl(url) {
       if(m) total=Number(m[3]);
       contentDisposition=cd;
       const bytes=new Uint8Array(await r.arrayBuffer());
+      if(!bytes.byteLength) break;
       chunks.push(bytes); start+=bytes.byteLength;
-      if(!m||r.status===200) total=bytes.byteLength;
+      if(!m||r.status===200) total=start;
       busy('Downloading…',Math.min(94,Math.round((start/Math.max(total,1))*94)+2));
-      if(start>=total||bytes.byteLength===0) break;
-      if(!m&&r.status===200) break;
+      if(start>=total||(!m&&r.status===200)) break;
     }
     if(!start) throw new Error('Empty book response');
     const all=new Uint8Array(start); let off=0;
     for(const c of chunks){all.set(c,off);off+=c.length;}
     const nm=contentDisposition.match(/filename="?([^";]+)"?/i);
     if(nm) filename=nm[1];
-    else filename='document';
     await openBuffer(all,filename,{url});
   }catch(err){
     busyOff(); console.error(err); showToast('Could not open this book: '+(err&&err.message?err.message:'download failed'));
   }
 }
 `;
-    const fnPattern=/async function openUrl\(url\) \{[\\s\\S]*?\n\}\n\n(?=async function loadPdf)/;
-    if(!fnPattern.test(source)) throw new Error('AirPages openUrl function was not found');
-    let patched=source.replace(fnPattern,injected+'\n\n');
-    const startupPattern=/const qs = new URLSearchParams\(location\.search\), src = qs\.get\('src'\) \|\| qs\.get\('url'\) \|\| qs\.get\('file'\);/;
-    if(!startupPattern.test(patched)) throw new Error('AirPages startup query was not found');
-    patched=patched.replace(startupPattern,'const qs = new URLSearchParams(location.search), src = '+JSON.stringify(proxy)+';');
+    const start=source.indexOf('async function openUrl(url) {');
+    const end=source.indexOf('async function loadPdf(',start);
+    if(start<0||end<0) throw new Error('AirPages document structure was not found');
+    let patched=source.slice(0,start)+injected+'\n'+source.slice(end);
+    const startup="const qs = new URLSearchParams(location.search), src = qs.get('src') || qs.get('url') || qs.get('file');";
+    const replacement='const qs = new URLSearchParams(location.search), src = '+JSON.stringify(proxy)+';';
+    if(!patched.includes(startup)) throw new Error('AirPages startup query was not found');
+    patched=patched.replace(startup,replacement);
     document.open();document.write(patched);document.close();
   }catch(err){document.body.innerHTML='<p style="color:white;padding:2rem;font:16px system-ui">AirPages could not start: '+String(err.message||err)+'</p>';console.error(err);}
 })();
