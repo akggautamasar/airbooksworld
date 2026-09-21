@@ -120,7 +120,7 @@ export function BookExperience({ book, ext, canRead, previousId: initialPrevious
   }
 
   const navButton = "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#cfc6ba] bg-[#F5F2EB] px-5 py-3 font-mono text-[10px] uppercase tracking-[.18em] text-[#5d554c] shadow-[0_4px_12px_rgba(44,37,30,.05)] transition-all hover:-translate-y-0.5 hover:bg-white hover:border-[#a99787] active:translate-y-0 disabled:cursor-default disabled:opacity-35";
-  const airPagesUrl = `/AirPages_3D_Reader.html?src=${encodeURIComponent(getDownloadUrl(book.id))}`;
+  const airPagesUrl = `/airpages-book.html?id=${encodeURIComponent(book.id)}`;
 
   return (
     <main className={`book-experience min-h-screen bg-[#F5F2EB] text-[#241F19] ${closing ? "is-closing" : ""}`}>
