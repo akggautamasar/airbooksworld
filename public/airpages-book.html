@@ -39,7 +39,8 @@ async function openUrl(url) {
   }
 }
 `;
-    const patched=source.replace('async function openUrl(url) {',injected);
+    let patched=source.replace('async function openUrl(url) {',injected);
+    patched=patched.replace("const qs = new URLSearchParams(location.search), src = qs.get('src') || qs.get('url') || qs.get('file');", "const qs = new URLSearchParams(location.search), src = " + JSON.stringify(proxy) + " || qs.get('src') || qs.get('url') || qs.get('file');");
     window.__airPagesBookProxy=proxy;
     document.open();document.write(patched);document.close();
   }catch(err){document.body.innerHTML='<p style="color:white;padding:2rem;font:16px system-ui">AirPages could not start.</p>';console.error(err);}
