@@ -120,6 +120,7 @@ export function BookExperience({ book, ext, canRead, previousId: initialPrevious
   }
 
   const navButton = "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#cfc6ba] bg-[#F5F2EB] px-5 py-3 font-mono text-[10px] uppercase tracking-[.18em] text-[#5d554c] shadow-[0_4px_12px_rgba(44,37,30,.05)] transition-all hover:-translate-y-0.5 hover:bg-white hover:border-[#a99787] active:translate-y-0 disabled:cursor-default disabled:opacity-35";
+  const airPagesUrl = `/AirPages_3D_Reader.html?src=${encodeURIComponent(getDownloadUrl(book.id))}`;
 
   return (
     <main className={`book-experience min-h-screen bg-[#F5F2EB] text-[#241F19] ${closing ? "is-closing" : ""}`}>
@@ -136,6 +137,7 @@ export function BookExperience({ book, ext, canRead, previousId: initialPrevious
         <div className="book-experience-actions mt-10 border-t border-[#d9d2c7] pt-7">
           <div className="flex flex-wrap items-center gap-3">
             {canRead && <a href={`/book/${book.id}/read`} className="experience-primary inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#8f634e] px-6 py-3 font-mono text-[10px] uppercase tracking-[.18em] text-[#fffaf2] shadow-[0_10px_24px_rgba(93,66,51,.16)] transition-all hover:-translate-y-0.5 hover:bg-[#7d5542]"><BookOpen className="h-4 w-4" /> Read</a>}
+            {canRead && <a href={airPagesUrl} className="experience-airpages inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#a99787] bg-[#ebe5dc] px-6 py-3 font-mono text-[10px] uppercase tracking-[.18em] text-[#6d5142] shadow-[0_6px_18px_rgba(93,66,51,.08)] transition-all hover:-translate-y-0.5 hover:bg-white" aria-label="Read this book in AirPages"><BookOpen className="h-4 w-4" /> Read in AirPages</a>}
             <a href={getDownloadUrl(book.id)} download className="experience-secondary inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#cfc6ba] bg-[#F5F2EB] px-6 py-3 font-mono text-[10px] uppercase tracking-[.18em] text-[#5d554c] transition-colors hover:bg-white"><Download className="h-4 w-4" /> Download</a>
             {ext === "PDF" && <a href={getDownloadUrl(book.id)} target="_blank" rel="noopener noreferrer" className="experience-secondary inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#cfc6ba] bg-[#F5F2EB] px-6 py-3 font-mono text-[10px] uppercase tracking-[.18em] text-[#5d554c] transition-colors hover:bg-white"><ExternalLink className="h-4 w-4" /> Open PDF</a>}
           </div>
